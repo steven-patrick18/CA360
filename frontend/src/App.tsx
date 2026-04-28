@@ -13,6 +13,7 @@ import AccessPage from './pages/admin/AccessPage'
 import ReportsPage from './pages/admin/ReportsPage'
 import AuditLogPage from './pages/admin/AuditLogPage'
 import SettingsPage from './pages/SettingsPage'
+import NewsPage from './pages/NewsPage'
 import Layout from './components/Layout'
 import { useAuth } from './lib/auth'
 
@@ -54,6 +55,7 @@ function App() {
         <Route path="reports" element={<ReportsPage />} />
         <Route path="audit" element={<AuditLogPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="news" element={<NewsPage />} />
         <Route path="clients/import" element={<ImportClientsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

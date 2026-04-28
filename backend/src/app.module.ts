@@ -20,6 +20,7 @@ import { StorageModule } from './storage/storage.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ReportsModule } from './reports/reports.module';
 import { ProfileModule } from './profile/profile.module';
+import { NewsModule } from './news/news.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { ProfileModule } from './profile/profile.module';
     DocumentsModule,
     ReportsModule,
     ProfileModule,
+    NewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
