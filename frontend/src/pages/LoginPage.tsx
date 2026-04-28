@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import Logo from '../components/Logo'
+import { BRANDING } from '../lib/branding'
 
 interface LoginResponse {
   stage: 'enroll_2fa' | 'verify_2fa'
@@ -42,9 +44,13 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-blue-50 px-4">
       <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-blue-600">CA360</h1>
-          <p className="mt-1 text-sm text-slate-500">Practice management for Chartered Accountants</p>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <Logo size={64} className="mb-3" />
+          <h1 className="text-2xl font-bold text-slate-900">{BRANDING.firmName}</h1>
+          <p className="mt-1 text-sm text-slate-500">{BRANDING.tagline}</p>
+          <p className="mt-1 text-[10px] uppercase tracking-wide text-blue-600">
+            powered by {BRANDING.appName}
+          </p>
         </div>
         <form
           onSubmit={onSubmit}

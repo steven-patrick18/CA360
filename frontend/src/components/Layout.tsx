@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { ROLE_LABELS, useAuth, type UserRole } from '../lib/auth'
+import Logo from './Logo'
+import { BRANDING } from '../lib/branding'
 
 interface NavItem {
   label: string
@@ -58,8 +60,16 @@ export default function Layout() {
     <div className="flex h-screen bg-slate-50">
       {/* Sidebar */}
       <aside className="flex w-60 flex-col border-r border-slate-200 bg-white">
-        <div className="flex h-14 items-center border-b border-slate-200 px-4">
-          <span className="text-lg font-bold text-blue-600">CA360</span>
+        <div className="flex h-14 items-center gap-2 border-b border-slate-200 px-3">
+          <Logo size={32} />
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-sm font-semibold text-slate-900" title={user.firmName}>
+              {user.firmName}
+            </div>
+            <div className="text-[10px] uppercase tracking-wide text-blue-600">
+              {BRANDING.appName}
+            </div>
+          </div>
         </div>
         <nav className="flex-1 space-y-1 px-2 py-3">
           {visible.map((item) =>
@@ -96,9 +106,13 @@ export default function Layout() {
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
           <div>
-            <div className="text-sm font-medium text-slate-900">{user.firmName}</div>
-            {user.branchName && (
-              <div className="text-xs text-slate-500">{user.branchName}</div>
+            {user.branchName ? (
+              <>
+                <div className="text-sm font-medium text-slate-900">{user.branchName}</div>
+                <div className="text-xs text-slate-500">{user.firmName}</div>
+              </>
+            ) : (
+              <div className="text-sm font-medium text-slate-900">{user.firmName}</div>
             )}
           </div>
           <div className="flex items-center gap-4">

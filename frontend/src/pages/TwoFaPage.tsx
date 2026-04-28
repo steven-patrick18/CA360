@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import Logo from '../components/Logo'
+import { BRANDING } from '../lib/branding'
 
 interface TwoFaState {
   preAuthToken: string
@@ -53,8 +55,9 @@ export default function TwoFaPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-blue-50 px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-blue-600">CA360</h1>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <Logo size={56} className="mb-2" />
+          <h1 className="text-xl font-bold text-slate-900">{BRANDING.firmName}</h1>
           <p className="mt-1 text-sm text-slate-500">{state.email}</p>
         </div>
 
