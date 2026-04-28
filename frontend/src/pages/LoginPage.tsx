@@ -45,12 +45,12 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-blue-50 px-4">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-center">
-          <Logo size={64} className="mb-3" />
-          <h1 className="text-2xl font-bold text-slate-900">{BRANDING.firmName}</h1>
+          <Logo size={72} className="mb-3" />
+          <h1 className="text-4xl font-bold tracking-tight text-blue-700">
+            {BRANDING.appName}
+          </h1>
+          <p className="mt-2 text-base font-medium text-slate-800">{BRANDING.firmName}</p>
           <p className="mt-1 text-sm text-slate-500">{BRANDING.tagline}</p>
-          <p className="mt-1 text-[10px] uppercase tracking-wide text-blue-600">
-            powered by {BRANDING.appName}
-          </p>
         </div>
         <form
           onSubmit={onSubmit}

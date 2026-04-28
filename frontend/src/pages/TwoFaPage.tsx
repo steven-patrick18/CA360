@@ -57,8 +57,9 @@ export default function TwoFaPage() {
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-center">
           <Logo size={56} className="mb-2" />
-          <h1 className="text-xl font-bold text-slate-900">{BRANDING.firmName}</h1>
-          <p className="mt-1 text-sm text-slate-500">{state.email}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-blue-700">{BRANDING.appName}</h1>
+          <p className="mt-1 text-sm font-medium text-slate-700">{BRANDING.firmName}</p>
+          <p className="mt-1 text-xs text-slate-500">{state.email}</p>
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">

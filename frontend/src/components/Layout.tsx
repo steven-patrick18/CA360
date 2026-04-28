@@ -60,14 +60,17 @@ export default function Layout() {
     <div className="flex h-screen bg-slate-50">
       {/* Sidebar */}
       <aside className="flex w-60 flex-col border-r border-slate-200 bg-white">
-        <div className="flex h-14 items-center gap-2 border-b border-slate-200 px-3">
-          <Logo size={32} />
+        <div className="flex items-center gap-2.5 border-b border-slate-200 px-3 py-2.5">
+          <Logo size={36} />
           <div className="min-w-0 leading-tight">
-            <div className="truncate text-sm font-semibold text-slate-900" title={user.firmName}>
-              {user.firmName}
-            </div>
-            <div className="text-[10px] uppercase tracking-wide text-blue-600">
+            <div className="text-base font-bold tracking-tight text-blue-700">
               {BRANDING.appName}
+            </div>
+            <div
+              className="truncate text-[11px] font-medium text-slate-600"
+              title={user.firmName}
+            >
+              {user.firmName}
             </div>
           </div>
         </div>
