@@ -3,6 +3,7 @@ import type {
   CreateFilingPayload,
   DashboardStats,
   FilingListItem,
+  ItrDetails,
   PaginatedFilings,
   UpdateFilingPayload,
 } from './api-types'
@@ -51,6 +52,26 @@ export const filingsApi = {
     })
     return data
   },
+
+  /**
+   * Trigger a browser download of the original ITR JSON for a filing.
+   * Falls back to a friendly error if no JSON was ever imported.
+   */
+  async downloadSourceJson(filing: Pick<FilingListItem, 'id' | 'sourceFilename' | 'assessmentYear' | 'client'>): Promise<void> {
+    const res = await api.get<Blob>(`/filings/${filing.id}/source-json`, {
+      responseType: 'blob',
+    })
+    const fallback = `${(filing.client.pan || filing.client.name).replace(/\s+/g, '_')}_AY${filing.assessmentYear}.json`
+    const filename = filing.sourceFilename || fallback
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  },
 }
 
 export interface ImportItrResponse {
@@ -64,6 +85,7 @@ export interface ImportItrResponse {
     grossIncome: number | null
     taxPaid: number | null
     refundAmount: number | null
+    details: ItrDetails
     notes: string[]
   }
   created: boolean

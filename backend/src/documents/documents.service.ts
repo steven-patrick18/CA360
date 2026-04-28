@@ -113,6 +113,7 @@ export class DocumentsService {
     if (options.filingId) {
       const filing = await this.prisma.itrFiling.findFirst({
         where: { id: options.filingId, clientId, firmId },
+        select: { id: true },
       });
       if (!filing) throw new NotFoundException('Filing not found for this client');
     }

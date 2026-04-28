@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ClientForm from '../../components/ClientForm'
 import DocumentsSection from '../../components/DocumentsSection'
+import FilingDetailsPanel from '../../components/FilingDetailsPanel'
 import FilingFormModal from '../../components/FilingFormModal'
 import FilingImportModal from '../../components/FilingImportModal'
 import Spinner from '../../components/Spinner'
@@ -247,6 +248,102 @@ function CredentialSlot({ clientId, portal, existing, onChange }: CredentialSlot
   )
 }
 
+interface FilingRowProps {
+  filing: FilingListItem
+  expandable: boolean
+  isOpen: boolean
+  onToggle: () => void
+  onEdit: () => void
+}
+
+function FilingRow({ filing: f, expandable, isOpen, onToggle, onEdit }: FilingRowProps) {
+  const toast = useToast()
+  const [downloading, setDownloading] = useState(false)
+
+  async function handleDownload(e: React.MouseEvent) {
+    e.stopPropagation()
+    setDownloading(true)
+    try {
+      await filingsApi.downloadSourceJson(f)
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  return (
+    <>
+      <tr
+        className={`${expandable ? 'cursor-pointer' : ''} hover:bg-slate-50`}
+        onClick={expandable ? onToggle : undefined}
+      >
+        <td className="py-2 text-center text-slate-400">
+          {expandable && (
+            <span className="inline-block transition-transform" style={{
+              transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+            }}>▸</span>
+          )}
+        </td>
+        <td className="py-2 font-mono text-xs">{f.assessmentYear}</td>
+        <td className="py-2 text-xs text-slate-600">
+          {f.itrForm ? ITR_FORM_LABELS[f.itrForm] : '—'}
+        </td>
+        <td className="py-2">
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${FILING_STATUS_COLORS[f.status]}`}
+          >
+            {FILING_STATUS_LABELS[f.status]}
+          </span>
+        </td>
+        <td className="py-2 text-xs text-slate-600">{fmtDate(f.dueDate)}</td>
+        <td className="py-2 text-xs text-slate-600">{fmtDate(f.filedDate)}</td>
+        <td className="py-2 text-right font-mono text-xs text-slate-700">
+          {fmtINR(f.refundAmount)}
+        </td>
+        <td className="py-2 text-right">
+          <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+            {f.hasSourceJson && (
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloading}
+                className="text-xs text-slate-600 hover:text-blue-600 hover:underline disabled:opacity-50"
+                title="Download the original ITR JSON"
+              >
+                {downloading ? 'Downloading…' : 'Download JSON'}
+              </button>
+            )}
+            <button
+              onClick={onEdit}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              Edit
+            </button>
+          </div>
+        </td>
+      </tr>
+      {isOpen && expandable && (
+        <tr className="bg-slate-50/60">
+          <td colSpan={8} className="px-2 py-3">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Computation of Income — AY {f.assessmentYear}
+              </div>
+              {f.acknowledgementNo && (
+                <div className="text-[11px] text-slate-500">
+                  Ack: <span className="font-mono">{f.acknowledgementNo}</span>
+                </div>
+              )}
+            </div>
+            <FilingDetailsPanel details={f.details} />
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
 export default function ClientDetailPage() {
   const { id = '' } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -261,6 +358,7 @@ export default function ClientDetailPage() {
     open: false,
   })
   const [importModalOpen, setImportModalOpen] = useState(false)
+  const [expandedFilingId, setExpandedFilingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -462,6 +560,7 @@ export default function ClientDetailPage() {
             <table className="w-full text-sm">
               <thead className="text-xs uppercase text-slate-500">
                 <tr>
+                  <th className="w-6 py-2" />
                   <th className="py-2 text-left font-medium">AY</th>
                   <th className="py-2 text-left font-medium">Form</th>
                   <th className="py-2 text-left font-medium">Status</th>
@@ -472,34 +571,20 @@ export default function ClientDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filings.map((f) => (
-                  <tr key={f.id} className="hover:bg-slate-50">
-                    <td className="py-2 font-mono text-xs">{f.assessmentYear}</td>
-                    <td className="py-2 text-xs text-slate-600">
-                      {f.itrForm ? ITR_FORM_LABELS[f.itrForm] : '—'}
-                    </td>
-                    <td className="py-2">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${FILING_STATUS_COLORS[f.status]}`}
-                      >
-                        {FILING_STATUS_LABELS[f.status]}
-                      </span>
-                    </td>
-                    <td className="py-2 text-xs text-slate-600">{fmtDate(f.dueDate)}</td>
-                    <td className="py-2 text-xs text-slate-600">{fmtDate(f.filedDate)}</td>
-                    <td className="py-2 text-right font-mono text-xs text-slate-700">
-                      {fmtINR(f.refundAmount)}
-                    </td>
-                    <td className="py-2 text-right">
-                      <button
-                        onClick={() => setFilingModal({ open: true, filing: f })}
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filings.map((f) => {
+                  const expandable = Boolean(f.details?.sections?.length)
+                  const isOpen = expandedFilingId === f.id
+                  return (
+                    <FilingRow
+                      key={f.id}
+                      filing={f}
+                      expandable={expandable}
+                      isOpen={isOpen}
+                      onToggle={() => setExpandedFilingId(isOpen ? null : f.id)}
+                      onEdit={() => setFilingModal({ open: true, filing: f })}
+                    />
+                  )
+                })}
               </tbody>
             </table>
           </div>

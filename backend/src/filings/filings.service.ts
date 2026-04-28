@@ -162,6 +162,8 @@ export class FilingsService {
         orderBy: [{ assessmentYear: 'desc' }, { updatedAt: 'desc' }],
         take: query.limit,
         skip: query.offset,
+        // sourceJson can be hundreds of KB per row — never fetch in lists.
+        omit: { sourceJson: true },
         include: {
           client: { select: { id: true, srNo: true, name: true, pan: true, typeOfAssessee: true } },
           preparedBy: { select: { id: true, name: true } },
@@ -171,13 +173,19 @@ export class FilingsService {
       this.prisma.itrFiling.count({ where }),
     ]);
 
-    return { items, total, limit: query.limit, offset: query.offset };
+    const withFlag = items.map((f) => ({
+      ...f,
+      hasSourceJson: Boolean(f.sourceFilename),
+    }));
+
+    return { items: withFlag, total, limit: query.limit, offset: query.offset };
   }
 
   async findOne(id: string) {
     const scope = await this.filingScope();
     const filing = await this.prisma.itrFiling.findFirst({
       where: { ...scope, id },
+      omit: { sourceJson: true },
       include: {
         client: {
           select: { id: true, srNo: true, name: true, pan: true, branchId: true, typeOfAssessee: true },
@@ -187,7 +195,30 @@ export class FilingsService {
       },
     });
     if (!filing) throw new NotFoundException('Filing not found');
-    return filing;
+    return { ...filing, hasSourceJson: Boolean(filing.sourceFilename) };
+  }
+
+  /**
+   * Returns the raw uploaded ITR JSON for download. Returns null if no JSON
+   * was ever imported for this filing.
+   */
+  async getSourceJson(
+    id: string,
+  ): Promise<{ filename: string; json: string } | null> {
+    const scope = await this.filingScope();
+    const filing = await this.prisma.itrFiling.findFirst({
+      where: { ...scope, id },
+      select: {
+        sourceJson: true,
+        sourceFilename: true,
+        assessmentYear: true,
+        client: { select: { pan: true, name: true } },
+      },
+    });
+    if (!filing) throw new NotFoundException('Filing not found');
+    if (!filing.sourceJson) return null;
+    const fallback = `${(filing.client.pan || filing.client.name).replace(/\s+/g, '_')}_AY${filing.assessmentYear}.json`;
+    return { filename: filing.sourceFilename || fallback, json: filing.sourceJson };
   }
 
   // ────────────────────────────────────────────────────────────────────
@@ -217,6 +248,7 @@ export class FilingsService {
 
     const updated = await this.prisma.itrFiling.update({
       where: { id },
+      omit: { sourceJson: true },
       data: {
         assessmentYear: dto.assessmentYear,
         itrForm: dto.itrForm,
@@ -274,7 +306,11 @@ export class FilingsService {
   // Import from ITR JSON (downloaded by the user from the e-Filing portal)
   // ────────────────────────────────────────────────────────────────────
 
-  async importFromJson(clientId: string, fileBuffer: Buffer): Promise<ImportItrResult> {
+  async importFromJson(
+    clientId: string,
+    fileBuffer: Buffer,
+    originalFilename?: string,
+  ): Promise<ImportItrResult> {
     const firmId = this.firmId();
     const cs = await this.clientScope();
 
@@ -283,9 +319,11 @@ export class FilingsService {
     });
     if (!client) throw new NotFoundException('Client not found or out of scope');
 
+    const sourceJson = fileBuffer.toString('utf8');
+
     let json: unknown;
     try {
-      json = JSON.parse(fileBuffer.toString('utf8'));
+      json = JSON.parse(sourceJson);
     } catch (e) {
       throw new BadRequestException(
         `Could not parse the file as JSON: ${(e as Error).message}`,
@@ -307,13 +345,16 @@ export class FilingsService {
       );
     }
 
-    // If the filing was actually filed (we have an ack number), bump status to
-    // FILED unless we already moved past that.
+    // If the JSON shows the return was filed — i.e. it has an acknowledgement
+    // number OR a filing date — mark status as FILED. (A filed-date alone is a
+    // strong enough signal: the e-Filing portal only stamps it after a return
+    // is uploaded.) Stay at ACKNOWLEDGED if we already moved past FILED.
     const existingFiling = await this.prisma.itrFiling.findUnique({
       where: { clientId_assessmentYear: { clientId, assessmentYear: parsed.assessmentYear } },
     });
 
-    const statusFromImport = parsed.acknowledgementNo
+    const wasFiled = Boolean(parsed.acknowledgementNo || parsed.filedDate);
+    const statusFromImport = wasFiled
       ? existingFiling?.status === 'ACKNOWLEDGED'
         ? 'ACKNOWLEDGED'
         : 'FILED'
@@ -327,6 +368,9 @@ export class FilingsService {
       grossIncome: parsed.grossIncome ?? existingFiling?.grossIncome,
       taxPaid: parsed.taxPaid ?? existingFiling?.taxPaid,
       refundAmount: parsed.refundAmount ?? existingFiling?.refundAmount,
+      details: parsed.details as unknown as Prisma.InputJsonValue,
+      sourceJson,
+      sourceFilename: originalFilename ?? existingFiling?.sourceFilename ?? null,
     };
 
     const filing = await this.prisma.itrFiling.upsert({

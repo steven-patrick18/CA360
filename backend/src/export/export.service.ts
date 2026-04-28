@@ -90,6 +90,7 @@ export class ExportService {
     const filings = await this.prisma.itrFiling.findMany({
       where: { client: cs },
       orderBy: [{ assessmentYear: 'desc' }, { client: { srNo: 'asc' } }],
+      omit: { sourceJson: true, details: true },
       include: {
         client: { select: { srNo: true, name: true, pan: true } },
         preparedBy: { select: { name: true } },

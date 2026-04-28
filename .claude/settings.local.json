@@ -36,7 +36,18 @@
       "Bash(gh pr create --title 'Firm settings \\(name + logo upload\\) and permanent delete on clients/branches/users' --body ' *)",
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); & gh --version 2>&1 | Select-Object -First 2; & gh auth status 2>&1 | Select-Object -First 5)",
       "Bash(git stash *)",
-      "Bash(node smoke-test-import.js)"
+      "Bash(node smoke-test-import.js)",
+      "Bash(node node_modules/prisma/build/index.js migrate deploy)",
+      "Bash(npx --no-install prisma migrate deploy)",
+      "Bash(npx --no-install prisma generate)",
+      "Bash(npx --no-install tsc --noEmit)",
+      "Bash(node node_modules/typescript/bin/tsc --noEmit)",
+      "Bash(node backend/node_modules/typescript/bin/tsc -p backend/tsconfig.json --noEmit)",
+      "Bash(node \"D:/CA360/.claude/worktrees/xenodochial-pascal-87507e/backend/node_modules/typescript/bin/tsc\" -p \"D:/CA360/.claude/worktrees/xenodochial-pascal-87507e/backend/tsconfig.json\" --noEmit)",
+      "Bash(node \"D:/CA360/.claude/worktrees/xenodochial-pascal-87507e/frontend/node_modules/typescript/bin/tsc\" -p \"D:/CA360/.claude/worktrees/xenodochial-pascal-87507e/frontend/tsconfig.json\" --noEmit)",
+      "Bash(netstat -ano)",
+      "Bash(node node_modules/@nestjs/cli/bin/nest.js build)",
+      "Bash(node node_modules/vite/bin/vite.js build)"
     ]
   }
 }

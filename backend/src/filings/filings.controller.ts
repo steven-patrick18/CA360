@@ -4,16 +4,19 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { FilingsService } from './filings.service';
 import { CreateFilingDto } from './dto/create-filing.dto';
 import { UpdateFilingDto } from './dto/update-filing.dto';
@@ -75,6 +78,29 @@ export class FilingsController {
     if (!file.originalname.match(/\.json$/i)) {
       throw new BadRequestException('Please upload the ITR JSON file (.json)');
     }
-    return this.filings.importFromJson(clientId, file.buffer);
+    return this.filings.importFromJson(clientId, file.buffer, file.originalname);
+  }
+
+  /**
+   * Download the original uploaded ITR JSON for a filing. 404 if no JSON was
+   * ever imported for this filing (e.g. it was created manually).
+   */
+  @Get(':id/source-json')
+  async downloadSourceJson(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Res() res: Response,
+  ) {
+    const src = await this.filings.getSourceJson(id);
+    if (!src) {
+      throw new NotFoundException(
+        'No ITR JSON has been imported for this filing yet — nothing to download.',
+      );
+    }
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${src.filename.replace(/"/g, '')}"`,
+    );
+    res.send(src.json);
   }
 }

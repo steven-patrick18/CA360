@@ -230,6 +230,9 @@ model ItrFiling {
   preparedById      String?      @map("prepared_by") @db.Uuid
   filedById         String?      @map("filed_by") @db.Uuid
   remarks           String?
+  details           Json?
+  sourceJson        String?      @map("source_json")
+  sourceFilename    String?      @map("source_filename")
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
 

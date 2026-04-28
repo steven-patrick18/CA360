@@ -26,6 +26,20 @@ export type FilingStatus =
 
 export type ItrForm = 'ITR1' | 'ITR2' | 'ITR3' | 'ITR4' | 'ITR5' | 'ITR6' | 'ITR7'
 
+export interface ItrDetailRow {
+  label: string
+  value: string | number | null
+}
+
+export interface ItrDetailSection {
+  title: string
+  rows: ItrDetailRow[]
+}
+
+export interface ItrDetails {
+  sections: ItrDetailSection[]
+}
+
 export interface FilingListItem {
   id: string
   clientId: string
@@ -41,6 +55,9 @@ export interface FilingListItem {
   remarks: string | null
   preparedById: string | null
   filedById: string | null
+  details: ItrDetails | null
+  sourceFilename: string | null
+  hasSourceJson: boolean
   createdAt: string
   updatedAt: string
   client: { id: string; srNo: number; name: string; pan: string | null; typeOfAssessee: ClientType }

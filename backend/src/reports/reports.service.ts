@@ -160,6 +160,7 @@ export class ReportsService {
         dueDate: { gte: today, lte: horizon },
       },
       orderBy: { dueDate: 'asc' },
+      omit: { sourceJson: true, details: true },
       include: {
         client: { select: { id: true, srNo: true, name: true, pan: true } },
         preparedBy: { select: { id: true, name: true } },
@@ -180,6 +181,7 @@ export class ReportsService {
         dueDate: { lt: today },
       },
       orderBy: { dueDate: 'asc' },
+      omit: { sourceJson: true, details: true },
       include: {
         client: { select: { id: true, srNo: true, name: true, pan: true } },
         preparedBy: { select: { id: true, name: true } },

@@ -15,8 +15,24 @@ export interface ParsedItr {
   grossIncome: number | null;
   taxPaid: number | null;
   refundAmount: number | null;
+  /** Structured Computation of Income — sectioned for display in the UI. */
+  details: ItrDetails;
   /** Fields the parser couldn't locate — used to warn the user. */
   notes: string[];
+}
+
+export interface DetailRow {
+  label: string;
+  value: string | number | null;
+}
+
+export interface DetailSection {
+  title: string;
+  rows: DetailRow[];
+}
+
+export interface ItrDetails {
+  sections: DetailSection[];
 }
 
 /**
@@ -101,6 +117,140 @@ function detectForm(json: unknown): { form: ItrForm | null; container: unknown }
   }
 
   return { form: null, container: json };
+}
+
+/** Pull the first non-null value via findFirst, return as a number row. */
+function numRow(label: string, search: unknown, keys: string[]): DetailRow | null {
+  const v = asNumber(findFirst(search, keys));
+  return v === null ? null : { label, value: v };
+}
+
+function strRow(label: string, search: unknown, keys: string[]): DetailRow | null {
+  const v = asString(findFirst(search, keys));
+  return v === null ? null : { label, value: v };
+}
+
+/**
+ * Build the structured Computation of Income from the parsed JSON. Every
+ * lookup is best-effort — section is omitted entirely if no rows match.
+ */
+function buildDetails(search: unknown): ItrDetails {
+  const sections: DetailSection[] = [];
+
+  // Personal info
+  const personal: DetailRow[] = [
+    strRow('Name', search, ['AssesseeName', 'NameOfAssessee', 'AssesseName', 'FirstName']),
+    strRow('PAN', search, ['PAN', 'AssesseePAN', 'PanNo']),
+    strRow('Date of birth', search, ['DOB', 'DateOfBirth', 'DateOfIncorporation']),
+    strRow('Status', search, ['ResidentialStatus', 'ResidentStatus', 'Status']),
+    strRow('Aadhaar', search, ['AadhaarCardNo', 'AadhaarNumber']),
+    strRow('Address', search, ['ResidenceNo', 'AddressDetail']),
+    strRow('Email', search, ['EmailAddress', 'Email', 'EmailAddress_P']),
+    strRow('Mobile', search, ['MobileNo', 'MobileNoOfAssessee']),
+  ].filter((r): r is DetailRow => r !== null);
+  if (personal.length) sections.push({ title: 'Personal', rows: personal });
+
+  // Filing meta
+  const filing: DetailRow[] = [
+    strRow('Assessment Year', search, ['AssessmentYear', 'AssesmentYear', 'AssessYr']),
+    strRow('ITR form', search, ['FormName', 'ITRForm']),
+    strRow('Filing type', search, ['FilingType', 'ReturnFileSec']),
+    strRow('Filed date', search, ['DateOfFiling', 'FilingDate', 'EFiledOn', 'EFilingDate']),
+    strRow('Acknowledgement no', search, [
+      'AckNo',
+      'AcknowledgementNo',
+      'AcknowledgmentNo',
+      'AcknowledgementNumber',
+      'EFilingAck',
+    ]),
+  ].filter((r): r is DetailRow => r !== null);
+  if (filing.length) sections.push({ title: 'Filing details', rows: filing });
+
+  // Income heads (Schedule-wise)
+  const income: DetailRow[] = [
+    numRow('Salary', search, ['IncomeFromSal', 'IncomeFromSalary', 'NetSalary', 'TotIncFromSal']),
+    numRow('House property', search, ['IncomeFromHP', 'IncomeFromHouseProperty', 'TotalIncomeOfHP']),
+    numRow('Business / profession', search, [
+      'ProfitsGainsOfBusOrProf',
+      'IncomeFromBusiness',
+      'TotalIncomeOfPerson',
+      'NetProfitFromBus',
+    ]),
+    numRow('Capital gains', search, ['TotalCapGains', 'CapitalGain', 'TotalCapitalGains']),
+    numRow('Other sources', search, ['IncomeFromOS', 'IncomeOthSrc', 'IncomeFromOtherSources']),
+    numRow('Gross total income', search, ['GrossTotIncome', 'GrossTotalIncome', 'GrossTotInc']),
+  ].filter((r): r is DetailRow => r !== null);
+  if (income.length) sections.push({ title: 'Income', rows: income });
+
+  // Chapter VI-A deductions
+  const ded: DetailRow[] = [
+    numRow('80C — Investments', search, ['Section80C', 'Sec80C', 'TotalChapVIADeductions80C']),
+    numRow('80CCC — Pension fund', search, ['Section80CCC', 'Sec80CCC']),
+    numRow('80CCD(1) — NPS (employee)', search, ['Section80CCDEmployee', 'Sec80CCD1']),
+    numRow('80CCD(1B) — NPS additional', search, ['Section80CCD1B', 'Sec80CCD1B']),
+    numRow('80CCD(2) — NPS (employer)', search, ['Section80CCDEmployer', 'Sec80CCD2']),
+    numRow('80D — Health insurance', search, ['Section80D', 'Sec80D']),
+    numRow('80DD — Disabled dependent', search, ['Section80DD', 'Sec80DD']),
+    numRow('80DDB — Specified illness', search, ['Section80DDB', 'Sec80DDB']),
+    numRow('80E — Education loan', search, ['Section80E', 'Sec80E']),
+    numRow('80EE — Home loan interest', search, ['Section80EE', 'Sec80EE']),
+    numRow('80EEA — Affordable home', search, ['Section80EEA', 'Sec80EEA']),
+    numRow('80EEB — Electric vehicle', search, ['Section80EEB', 'Sec80EEB']),
+    numRow('80G — Donations', search, ['Section80G', 'Sec80G']),
+    numRow('80GG — Rent paid', search, ['Section80GG', 'Sec80GG']),
+    numRow('80GGA — Scientific research', search, ['Section80GGA', 'Sec80GGA']),
+    numRow('80GGC — Political party', search, ['Section80GGC', 'Sec80GGC']),
+    numRow('80TTA — Savings interest', search, ['Section80TTA', 'Sec80TTA']),
+    numRow('80TTB — Senior citizen interest', search, ['Section80TTB', 'Sec80TTB']),
+    numRow('80U — Self disability', search, ['Section80U', 'Sec80U']),
+    numRow('Total deductions', search, ['TotalChapVIADeductions', 'DeductionUs10A']),
+  ].filter((r): r is DetailRow => r !== null);
+  if (ded.length) sections.push({ title: 'Chapter VI-A deductions', rows: ded });
+
+  // Tax computation
+  const tax: DetailRow[] = [
+    numRow('Total income (taxable)', search, ['TotalIncome', 'TotIncome']),
+    numRow('Tax on total income', search, ['TaxOnTotalIncome', 'TaxAtNormalRates', 'TaxPayable']),
+    numRow('Surcharge', search, ['Surcharge', 'SurchargeOnTax']),
+    numRow('Health & education cess', search, ['EducationCess', 'HealthEduCess', 'CessOnTax']),
+    numRow('Gross tax liability', search, ['GrossTaxLiability', 'GrossTaxPay']),
+    numRow('Rebate u/s 87A', search, ['Rebate87A', 'RebateUs87A']),
+    numRow('Relief u/s 89', search, ['ReliefUs89', 'Relief89']),
+    numRow('Net tax liability', search, ['NetTaxLiability', 'AggregateLiability']),
+    numRow('Interest u/s 234A', search, ['IntrstPayUs234A', 'IntrstPay234A']),
+    numRow('Interest u/s 234B', search, ['IntrstPayUs234B', 'IntrstPay234B']),
+    numRow('Interest u/s 234C', search, ['IntrstPayUs234C', 'IntrstPay234C']),
+    numRow('Total tax & interest', search, ['TotalTaxAndInterest', 'TotTaxIntr']),
+  ].filter((r): r is DetailRow => r !== null);
+  if (tax.length) sections.push({ title: 'Tax computation', rows: tax });
+
+  // Taxes paid
+  const paid: DetailRow[] = [
+    numRow('TDS on salary', search, ['TotalTDSOnSal', 'TDSOnSalary']),
+    numRow('TDS other than salary', search, ['TotalTDSOnOthThanSals', 'TDSOnOtherIncome']),
+    numRow('TCS', search, ['TotalTCS', 'TCS']),
+    numRow('Advance tax', search, ['TotalAdvanceTax', 'AdvanceTax']),
+    numRow('Self-assessment tax', search, ['TotalSelfAssessmentTax', 'SelfAssessmentTax']),
+    numRow('Total taxes paid', search, ['TotalTaxesPaid', 'TaxPaid', 'TotalTaxPaid']),
+  ].filter((r): r is DetailRow => r !== null);
+  if (paid.length) sections.push({ title: 'Taxes paid', rows: paid });
+
+  // Refund / payable
+  const refund: DetailRow[] = [
+    numRow('Refund due', search, ['RefundDue', 'RefundAmount', 'Refund']),
+    numRow('Tax payable', search, ['BalTaxPayable', 'TaxPayableOnTotInc', 'NetTaxLiabRefund']),
+  ].filter((r): r is DetailRow => r !== null);
+  if (refund.length) sections.push({ title: 'Refund / Payable', rows: refund });
+
+  // Bank account
+  const bank: DetailRow[] = [
+    strRow('IFSC', search, ['IFSCCode', 'IFSC']),
+    strRow('Bank account no', search, ['BankAccountNo', 'AccountNo', 'BankAcNo']),
+    strRow('Bank account type', search, ['AccountType', 'TypeOfAccount']),
+  ].filter((r): r is DetailRow => r !== null);
+  if (bank.length) sections.push({ title: 'Bank account (refund)', rows: bank });
+
+  return { sections };
 }
 
 /**
@@ -200,6 +350,8 @@ export function parseItrJson(json: unknown): ParsedItr {
   if (taxPaid === null) notes.push('Tax paid not found.');
   if (refundAmount === null) notes.push('Refund / payable amount not found.');
 
+  const details = buildDetails(search);
+
   return {
     pan: pan.toUpperCase(),
     assessmentYear,
@@ -209,6 +361,7 @@ export function parseItrJson(json: unknown): ParsedItr {
     grossIncome,
     taxPaid,
     refundAmount,
+    details,
     notes,
   };
 }
