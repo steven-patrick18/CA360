@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { usersApi, branchesApi, type UserDetail, type BranchDetail } from '../../lib/admin-api'
 import { ROLE_LABELS } from '../../lib/auth'
 import { useToast, getApiErrorMessage } from '../../lib/toast'
@@ -209,6 +210,8 @@ function UserModal({ open, onClose, onSaved, user, branches }: UserModalProps) {
 
 export default function UsersPage() {
   const toast = useToast()
+  const [params, setParams] = useSearchParams()
+  const editId = params.get('edit')
   const [users, setUsers] = useState<UserDetail[]>([])
   const [branches, setBranches] = useState<BranchDetail[]>([])
   const [loading, setLoading] = useState(true)
@@ -226,6 +229,19 @@ export default function UsersPage() {
   }
 
   useEffect(reload, [])
+
+  // If we arrived here from /access with ?edit=<id>, auto-open the edit modal
+  // for that user once the list loads.
+  useEffect(() => {
+    if (!editId || users.length === 0 || modal.open) return
+    const target = users.find((u) => u.id === editId)
+    if (target) setModal({ open: true, user: target })
+    // Clear the param so refresh / back doesn't re-open
+    const next = new URLSearchParams(params)
+    next.delete('edit')
+    setParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, users])
 
   async function handleResetPassword(user: UserDetail) {
     if (!window.confirm(`Reset ${user.name}'s password? They'll need to enroll 2FA again.`)) return

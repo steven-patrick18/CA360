@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { usersApi, type UserDetail } from '../../lib/admin-api'
 import { ROLE_LABELS } from '../../lib/auth'
 import { useToast, getApiErrorMessage } from '../../lib/toast'
@@ -203,14 +203,14 @@ const SECTIONS: Section[] = [
         },
       },
       {
-        action: 'Create filing',
+        action: 'Create filing (on a client in their scope)',
         cells: {
           MANAGING_PARTNER: 'YES',
           PARTNER: 'YES',
           BRANCH_HEAD: 'YES',
           SENIOR_ARTICLE: 'YES',
-          ARTICLE: 'NO',
-          ACCOUNTANT: 'NO',
+          ARTICLE: 'YES',
+          ACCOUNTANT: 'YES',
         },
       },
       {
@@ -393,6 +393,7 @@ function CellBadge({ value }: { value: Cell }) {
 
 export default function AccessPage() {
   const toast = useToast()
+  const navigate = useNavigate()
   const [users, setUsers] = useState<UserDetail[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -450,7 +451,7 @@ export default function AccessPage() {
         <div className="border-b border-slate-200 px-5 py-3">
           <h2 className="text-base font-medium text-slate-900">Current users</h2>
           <p className="text-xs text-slate-500">
-            Click a user to change their role on the Users page.
+            Click a row to edit a user's role, branch, or active status.
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -462,18 +463,23 @@ export default function AccessPage() {
                 <th className="px-4 py-2 text-left font-medium">Role</th>
                 <th className="px-4 py-2 text-left font-medium">Branch</th>
                 <th className="px-4 py-2 text-left font-medium">Status</th>
+                <th className="px-4 py-2 text-right font-medium" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center">
+                  <td colSpan={6} className="px-4 py-6 text-center">
                     <Spinner />
                   </td>
                 </tr>
               ) : (
                 users.map((u) => (
-                  <tr key={u.id} className={!u.isActive ? 'opacity-50' : ''}>
+                  <tr
+                    key={u.id}
+                    className={`cursor-pointer hover:bg-slate-50 ${!u.isActive ? 'opacity-50' : ''}`}
+                    onClick={() => navigate(`/users?edit=${u.id}`)}
+                  >
                     <td className="px-4 py-2 font-medium text-slate-900">{u.name}</td>
                     <td className="px-4 py-2 font-mono text-xs">{u.email}</td>
                     <td className="px-4 py-2 text-xs">
@@ -487,6 +493,15 @@ export default function AccessPage() {
                         <span className="text-red-600">Deactivated</span>
                       )}
                     </td>
+                    <td className="px-4 py-2 text-right">
+                      <Link
+                        to={`/users?edit=${u.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs text-indigo-600 hover:underline"
+                      >
+                        Edit →
+                      </Link>
+                    </td>
                   </tr>
                 ))
               )}
@@ -495,7 +510,7 @@ export default function AccessPage() {
         </div>
         <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-right">
           <Link to="/users" className="text-sm text-indigo-600 hover:underline">
-            Manage users →
+            Go to Users page →
           </Link>
         </div>
       </div>

@@ -34,7 +34,9 @@ export class FilingsController {
   }
 
   @Post()
-  @Roles('MANAGING_PARTNER', 'PARTNER', 'BRANCH_HEAD', 'SENIOR_ARTICLE')
+  // Filings are part of routine data entry — every role with client visibility
+  // can create one (the service further enforces that the client is in their
+  // scope, so Articles can only create filings for their assigned clients).
   create(@Body() dto: CreateFilingDto) {
     return this.filings.create(dto);
   }
