@@ -10,7 +10,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', to: '/dashboard', roles: [], enabled: true },
-  { label: 'Clients', to: '/clients', roles: [], enabled: false },
+  { label: 'Clients', to: '/clients', roles: [], enabled: true },
   { label: 'ITR Filings', to: '/filings', roles: [], enabled: false },
   {
     label: 'Branches',

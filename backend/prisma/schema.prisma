@@ -1,14 +1,12 @@
 // CA360 — Phase 1 schema
 //
-// This schema covers ONLY the tables needed for Week 1 work:
-//   - ca_firm    (the tenant — one row per CA practice)
-//   - branches   (each firm has 1+ branches)
-//   - users      (firm staff, scoped to a branch)
+// Tables:
+//   ca_firm, branches, users          (auth + tenancy)
+//   clients                            (client master)
+//   client_credentials                 (encrypted portal logins per client)
+//   audit_log                          (append-only mutation log)
 //
-// Tables for Week 2+ (clients, client_credentials, itr_filings,
-// documents, audit_log, activity_log) will be added incrementally as we
-// build each module, NOT all at once. Schema is laid out with later
-// modules in mind (firm_id everywhere, UUID PKs, generic naming).
+// Tables for Week 3+ (itr_filings, documents, activity_log) added in next batch.
 
 generator client {
   provider = "prisma-client-js"
@@ -32,6 +30,31 @@ enum UserRole {
   ACCOUNTANT
 }
 
+enum ClientType {
+  INDIVIDUAL
+  HUF
+  PROPRIETORSHIP
+  PARTNERSHIP
+  LLP
+  COMPANY
+  TRUST
+  AOP_BOI
+  OTHER
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum Portal {
+  INCOME_TAX
+  GST
+  TRACES
+  MCA
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Models
 // ─────────────────────────────────────────────────────────────────────────
@@ -46,8 +69,11 @@ model CaFirm {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  branches Branch[]
-  users    User[]
+  branches    Branch[]
+  users       User[]
+  clients     Client[]
+  credentials ClientCredential[]
+  auditLogs   AuditLog[]
 
   @@map("ca_firm")
 }
@@ -63,9 +89,10 @@ model Branch {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  firm  CaFirm @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  head  User?  @relation("BranchHead", fields: [headUserId], references: [id], onDelete: SetNull)
-  users User[] @relation("BranchUsers")
+  firm    CaFirm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  head    User?    @relation("BranchHead", fields: [headUserId], references: [id], onDelete: SetNull)
+  users   User[]   @relation("BranchUsers")
+  clients Client[]
 
   @@unique([firmId, name])
   @@index([firmId])
@@ -88,11 +115,94 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  firm           CaFirm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  branch         Branch?  @relation("BranchUsers", fields: [branchId], references: [id], onDelete: SetNull)
-  branchesHeaded Branch[] @relation("BranchHead")
+  firm                  CaFirm             @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  branch                Branch?            @relation("BranchUsers", fields: [branchId], references: [id], onDelete: SetNull)
+  branchesHeaded        Branch[]           @relation("BranchHead")
+  assignedClients       Client[]           @relation("ClientAssignment")
+  credentialReveals     ClientCredential[] @relation("CredentialRevealer")
+  auditLogs             AuditLog[]         @relation("UserAuditLog")
 
   @@index([firmId])
   @@index([branchId])
   @@map("users")
+}
+
+model Client {
+  id             String       @id @default(uuid()) @db.Uuid
+  firmId         String       @map("firm_id") @db.Uuid
+  branchId       String       @map("branch_id") @db.Uuid
+  assignedUserId String?      @map("assigned_user_id") @db.Uuid
+  srNo           Int          @map("sr_no")
+  name           String
+  fatherName     String?      @map("father_name")
+  pan            String?      @db.VarChar(10)
+  aadharMasked   String?      @map("aadhar_masked") @db.VarChar(14) // e.g. "XXXX-XXXX-1234"
+  dob            DateTime?    @db.Date
+  typeOfAssessee ClientType   @default(INDIVIDUAL) @map("type_of_assessee")
+  email          String?
+  mobile         String?
+  address        String?
+  status         ClientStatus @default(ACTIVE)
+  onboardedOn    DateTime     @default(now()) @db.Date @map("onboarded_on")
+  notes          String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  firm        CaFirm             @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  branch      Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  assignedTo  User?              @relation("ClientAssignment", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  credentials ClientCredential[]
+
+  @@unique([firmId, srNo])
+  @@unique([firmId, pan])
+  @@index([firmId])
+  @@index([branchId])
+  @@index([assignedUserId])
+  @@index([firmId, status])
+  @@index([firmId, name])
+  @@map("clients")
+}
+
+model ClientCredential {
+  id                   String    @id @default(uuid()) @db.Uuid
+  firmId               String    @map("firm_id") @db.Uuid
+  clientId             String    @map("client_id") @db.Uuid
+  portal               Portal
+  username             String
+  encryptedPassword    String    @map("encrypted_password")
+  encryptionKeyVersion Int       @default(1) @map("encryption_key_version")
+  lastUpdated          DateTime  @default(now()) @map("last_updated")
+  lastRevealedAt       DateTime? @map("last_revealed_at")
+  lastRevealedBy       String?   @map("last_revealed_by") @db.Uuid
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  firm       CaFirm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client     Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  revealedBy User?  @relation("CredentialRevealer", fields: [lastRevealedBy], references: [id], onDelete: SetNull)
+
+  @@unique([clientId, portal])
+  @@index([firmId])
+  @@index([clientId])
+  @@map("client_credentials")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  firmId      String   @map("firm_id") @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  action      String // CREATE | UPDATE | DELETE | REVEAL_CREDENTIAL | LOGIN | LOGOUT | etc.
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  payloadJson Json?    @map("payload_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  firm CaFirm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  user User?  @relation("UserAuditLog", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([firmId, createdAt])
+  @@index([firmId, entityType, entityId])
+  @@map("audit_log")
 }

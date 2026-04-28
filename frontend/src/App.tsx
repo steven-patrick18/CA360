@@ -2,6 +2,9 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import TwoFaPage from './pages/TwoFaPage'
 import DashboardPage from './pages/DashboardPage'
+import ClientsListPage from './pages/clients/ClientsListPage'
+import ClientNewPage from './pages/clients/ClientNewPage'
+import ClientDetailPage from './pages/clients/ClientDetailPage'
 import Layout from './components/Layout'
 import { useAuth } from './lib/auth'
 
@@ -33,6 +36,9 @@ function App() {
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="clients" element={<ClientsListPage />} />
+        <Route path="clients/new" element={<ClientNewPage />} />
+        <Route path="clients/:id" element={<ClientDetailPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

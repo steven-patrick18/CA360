@@ -1,0 +1,393 @@
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import ClientForm from '../../components/ClientForm'
+import Spinner from '../../components/Spinner'
+import { clientsApi, credentialsApi } from '../../lib/clients-api'
+import {
+  PORTAL_LABELS,
+  STATUS_LABELS,
+  type ClientCredentialSummary,
+  type ClientDetail,
+  type Portal,
+  type RevealedCredential,
+  type UpdateClientPayload,
+} from '../../lib/api-types'
+import { useAuth } from '../../lib/auth'
+import { useToast, getApiErrorMessage } from '../../lib/toast'
+
+const PORTALS: Portal[] = ['INCOME_TAX', 'GST', 'TRACES', 'MCA']
+const REVEAL_VISIBLE_MS = 30_000
+
+function formatDate(value: string | null | undefined): string {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString()
+}
+
+interface CredentialSlotProps {
+  clientId: string
+  portal: Portal
+  existing: ClientCredentialSummary | undefined
+  onChange: () => void
+}
+
+function CredentialSlot({ clientId, portal, existing, onChange }: CredentialSlotProps) {
+  const toast = useToast()
+  const [editing, setEditing] = useState(false)
+  const [username, setUsername] = useState(existing?.username ?? '')
+  const [password, setPassword] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [revealed, setRevealed] = useState<RevealedCredential | null>(null)
+  const [revealRemaining, setRevealRemaining] = useState(0)
+
+  useEffect(() => {
+    setUsername(existing?.username ?? '')
+  }, [existing?.username])
+
+  // Auto-mask after REVEAL_VISIBLE_MS
+  useEffect(() => {
+    if (!revealed) return
+    setRevealRemaining(REVEAL_VISIBLE_MS / 1000)
+    const tick = setInterval(() => {
+      setRevealRemaining((s) => {
+        if (s <= 1) {
+          clearInterval(tick)
+          setRevealed(null)
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+    return () => clearInterval(tick)
+  }, [revealed])
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!username.trim() || !password) {
+      toast.error('Username and password are required')
+      return
+    }
+    setSubmitting(true)
+    try {
+      await credentialsApi.upsert(clientId, { portal, username: username.trim(), password })
+      toast.success(`${PORTAL_LABELS[portal]} credentials saved`)
+      setEditing(false)
+      setPassword('')
+      onChange()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleReveal() {
+    try {
+      const data = await credentialsApi.reveal(clientId, portal)
+      setRevealed(data)
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(`Delete ${PORTAL_LABELS[portal]} credentials? This cannot be undone.`))
+      return
+    try {
+      await credentialsApi.remove(clientId, portal)
+      toast.success(`${PORTAL_LABELS[portal]} credentials deleted`)
+      onChange()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    }
+  }
+
+  return (
+    <div className="rounded-md border border-slate-200 p-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-medium text-slate-900">{PORTAL_LABELS[portal]}</div>
+          {existing ? (
+            <div className="text-xs text-slate-500">
+              Username: <span className="font-mono">{existing.username}</span>
+            </div>
+          ) : (
+            <div className="text-xs text-slate-400">Not configured</div>
+          )}
+        </div>
+        {!editing && (
+          <div className="flex gap-2">
+            {existing && (
+              <>
+                <button
+                  onClick={handleReveal}
+                  className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                >
+                  Reveal
+                </button>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                >
+                  Update
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="rounded-md border border-red-200 bg-white px-2.5 py-1 text-xs text-red-700 hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </>
+            )}
+            {!existing && (
+              <button
+                onClick={() => setEditing(true)}
+                className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700"
+              >
+                Set up
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {revealed && (
+        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
+          <div className="flex items-center justify-between text-xs text-amber-700">
+            <span>Auto-masking in {revealRemaining}s</span>
+            <button
+              onClick={() => setRevealed(null)}
+              className="text-amber-700 underline hover:no-underline"
+            >
+              Hide now
+            </button>
+          </div>
+          <div className="mt-2">
+            <span className="text-xs text-slate-500">Username</span>
+            <div className="font-mono text-sm">{revealed.username}</div>
+          </div>
+          <div className="mt-2">
+            <span className="text-xs text-slate-500">Password</span>
+            <div className="font-mono text-sm">{revealed.password}</div>
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <form onSubmit={handleSave} className="mt-3 space-y-2">
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Username"
+            autoComplete="off"
+            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={existing ? 'New password (leave blank to keep)…' : 'Password'}
+            autoComplete="new-password"
+            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(false)
+                setPassword('')
+                setUsername(existing?.username ?? '')
+              }}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {submitting ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {existing && !editing && (
+        <div className="mt-2 flex justify-between text-[11px] text-slate-400">
+          <span>Updated {formatDate(existing.lastUpdated)}</span>
+          {existing.lastRevealedAt && (
+            <span>Last revealed {formatDate(existing.lastRevealedAt)}</span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function ClientDetailPage() {
+  const { id = '' } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const toast = useToast()
+  const { user } = useAuth()
+  const [client, setClient] = useState<ClientDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [savingForm, setSavingForm] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await clientsApi.detail(id)
+      setClient(data)
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    } finally {
+      setLoading(false)
+    }
+  }, [id, toast])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  async function handleSave(payload: UpdateClientPayload) {
+    setSavingForm(true)
+    try {
+      await clientsApi.update(id, payload)
+      toast.success('Client updated')
+      await load()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    } finally {
+      setSavingForm(false)
+    }
+  }
+
+  async function handleArchive() {
+    if (!client) return
+    if (!window.confirm(`Archive ${client.name}? They'll be hidden from the default list.`)) return
+    setArchiving(true)
+    try {
+      await clientsApi.archive(id)
+      toast.success('Client archived')
+      navigate('/clients')
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    } finally {
+      setArchiving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  if (!client) {
+    return (
+      <div className="text-center text-slate-500">Client not found.</div>
+    )
+  }
+
+  const canArchive =
+    client.status !== 'ARCHIVED' &&
+    user &&
+    ['MANAGING_PARTNER', 'PARTNER', 'BRANCH_HEAD'].includes(user.role)
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-5">
+      <div>
+        <Link to="/clients" className="text-sm text-indigo-600 hover:underline">
+          ← Back to clients
+        </Link>
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-semibold text-slate-900">{client.name}</h1>
+              <span className="text-sm text-slate-500">Sr No {client.srNo}</span>
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                  client.status === 'ACTIVE'
+                    ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                    : client.status === 'INACTIVE'
+                      ? 'bg-slate-100 text-slate-600 ring-slate-200'
+                      : 'bg-amber-50 text-amber-700 ring-amber-200'
+                }`}
+              >
+                {STATUS_LABELS[client.status]}
+              </span>
+            </div>
+            {client.pan && (
+              <p className="mt-1 font-mono text-sm text-slate-500">PAN: {client.pan}</p>
+            )}
+          </div>
+          {canArchive && (
+            <button
+              onClick={handleArchive}
+              disabled={archiving}
+              className="rounded-md border border-red-200 bg-white px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+            >
+              Archive
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {/* Form: 2/3 width */}
+        <div className="lg:col-span-2 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-base font-medium text-slate-900">Details</h2>
+          <ClientForm
+            mode="edit"
+            initialValues={{
+              branchId: client.branchId,
+              assignedUserId: client.assignedUserId ?? '',
+              name: client.name,
+              fatherName: client.fatherName ?? '',
+              pan: client.pan ?? '',
+              aadhaarLast4: client.aadharMasked ? client.aadharMasked.slice(-4) : '',
+              dob: client.dob ? client.dob.split('T')[0] : '',
+              typeOfAssessee: client.typeOfAssessee,
+              email: client.email ?? '',
+              mobile: client.mobile ?? '',
+              address: client.address ?? '',
+              notes: client.notes ?? '',
+              status: client.status,
+            }}
+            onSubmit={handleSave as never}
+            submitting={savingForm}
+          />
+        </div>
+
+        {/* Credentials Vault: 1/3 width */}
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-1 text-base font-medium text-slate-900">Portal credentials</h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Stored encrypted (AES-256-GCM, per-firm key). Each reveal is logged in the audit
+            trail.
+          </p>
+          <div className="space-y-3">
+            {PORTALS.map((p) => {
+              const existing = client.credentials.find((c) => c.portal === p)
+              return (
+                <CredentialSlot
+                  key={p}
+                  clientId={client.id}
+                  portal={p}
+                  existing={existing}
+                  onChange={() => void load()}
+                />
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

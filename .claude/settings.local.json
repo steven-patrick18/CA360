@@ -17,7 +17,15 @@
       "PowerShell($env:PGPASSWORD = 'postgres'; & 'C:\\\\Program Files\\\\PostgreSQL\\\\15\\\\bin\\\\psql.exe' -U postgres -d postgres -h localhost -w -c \"CREATE USER ca360 WITH PASSWORD 'ca360_dev_2026';\" -c \"CREATE DATABASE ca360 OWNER ca360;\" -c \"GRANT ALL PRIVILEGES ON DATABASE ca360 TO ca360;\" 2>&1)",
       "Bash(npm run *)",
       "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@ca360.local\",\"password\":\"Admin@12345\"}')",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\")",
+      "PowerShell([Convert]::ToBase64String\\(\\(1..32 | ForEach-Object { Get-Random -Maximum 256 }\\)\\))",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/api/meta/branches)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/api/clients)",
+      "Bash(node smoke-test.js)"
     ]
   }
 }
