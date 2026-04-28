@@ -75,6 +75,17 @@ enum ItrForm {
   ITR7
 }
 
+enum TaxRegime {
+  OLD
+  NEW
+}
+
+enum AgeCategory {
+  BELOW_60
+  SENIOR_60_TO_79
+  SUPER_SENIOR_80_PLUS
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Models
 // ─────────────────────────────────────────────────────────────────────────
@@ -90,13 +101,14 @@ model CaFirm {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  branches    Branch[]
-  users       User[]
-  clients     Client[]
-  credentials ClientCredential[]
-  filings     ItrFiling[]
-  documents   Document[]
-  auditLogs   AuditLog[]
+  branches     Branch[]
+  users        User[]
+  clients      Client[]
+  credentials  ClientCredential[]
+  filings      ItrFiling[]
+  documents    Document[]
+  auditLogs    AuditLog[]
+  computations Computation[]
 
   @@map("ca_firm")
 }
@@ -174,12 +186,13 @@ model Client {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  firm        CaFirm             @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  branch      Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  assignedTo  User?              @relation("ClientAssignment", fields: [assignedUserId], references: [id], onDelete: SetNull)
-  credentials ClientCredential[]
-  filings     ItrFiling[]
-  documents   Document[]
+  firm         CaFirm             @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  branch       Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  assignedTo   User?              @relation("ClientAssignment", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  credentials  ClientCredential[]
+  filings      ItrFiling[]
+  documents    Document[]
+  computations Computation[]
 
   @@unique([firmId, srNo])
   @@unique([firmId, pan])
@@ -294,4 +307,37 @@ model AuditLog {
   @@index([firmId, createdAt])
   @@index([firmId, entityType, entityId])
   @@map("audit_log")
+}
+
+/**
+ * Computation: a saved tax calculation for a client. Inputs (income heads,
+ * deductions, taxes paid) and the computed snapshot (slab-by-slab tax,
+ * surcharge, cess, rebate, payable/refund) are both stored as JSONB so
+ * the slab logic can evolve year-over-year without schema changes.
+ *
+ * v1: Individual taxpayer only, AY 2024-25 + 2025-26, capital gains treated
+ * as slab income (special rates handled in v2).
+ */
+model Computation {
+  id             String      @id @default(uuid()) @db.Uuid
+  firmId         String      @map("firm_id") @db.Uuid
+  clientId       String      @map("client_id") @db.Uuid
+  assessmentYear String      @map("assessment_year") @db.VarChar(7) // "2024-25"
+  regime         TaxRegime
+  ageCategory    AgeCategory @default(BELOW_60) @map("age_category")
+  inputs         Json
+  computed       Json
+  /** Headline number for filtering / list display; positive = payable, negative = refund. */
+  taxPayable     Decimal?    @map("tax_payable") @db.Decimal(15, 2)
+  remarks        String?
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  firm   CaFirm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([firmId])
+  @@index([clientId])
+  @@index([firmId, assessmentYear])
+  @@map("computations")
 }

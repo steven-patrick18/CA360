@@ -48,7 +48,15 @@
       "Bash(netstat -ano)",
       "Bash(node node_modules/@nestjs/cli/bin/nest.js build)",
       "Bash(node node_modules/vite/bin/vite.js build)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git -C \"D:/CA360\" status)",
+      "Bash(git -C \"D:/CA360\" merge --ff-only claude/xenodochial-pascal-87507e)",
+      "Bash(git -C \"D:/CA360\" log --oneline -4)",
+      "Bash(where pdftoppm *)",
+      "Read(//c/Program Files/**)",
+      "Bash(pdftotext -layout \"C:/Users/ASUS/Downloads/COI_AY_24-25.pdf\" -)",
+      "Bash(git -C \"D:/CA360\" log --oneline origin/main..HEAD)",
+      "Bash(git -C \"D:/CA360\" push origin main)"
     ]
   }
 }

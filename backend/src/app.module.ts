@@ -22,6 +22,7 @@ import { ReportsModule } from './reports/reports.module';
 import { ProfileModule } from './profile/profile.module';
 import { NewsModule } from './news/news.module';
 import { FirmsModule } from './firms/firms.module';
+import { ComputationsModule } from './computations/computations.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { FirmsModule } from './firms/firms.module';
     ProfileModule,
     NewsModule,
     FirmsModule,
+    ComputationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

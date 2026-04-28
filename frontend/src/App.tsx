@@ -7,6 +7,8 @@ import ClientNewPage from './pages/clients/ClientNewPage'
 import ClientDetailPage from './pages/clients/ClientDetailPage'
 import FilingsListPage from './pages/filings/FilingsListPage'
 import FilingPreviewPage from './pages/filings/FilingPreviewPage'
+import ComputationsListPage from './pages/computations/ComputationsListPage'
+import ComputationFormPage from './pages/computations/ComputationFormPage'
 import UsersPage from './pages/admin/UsersPage'
 import BranchesPage from './pages/admin/BranchesPage'
 import ImportClientsPage from './pages/admin/ImportClientsPage'
@@ -59,6 +61,9 @@ function App() {
         <Route path="clients/new" element={<ClientNewPage />} />
         <Route path="clients/:id" element={<ClientDetailPage />} />
         <Route path="filings" element={<FilingsListPage />} />
+        <Route path="computations" element={<ComputationsListPage />} />
+        <Route path="computations/new" element={<ComputationFormPage />} />
+        <Route path="computations/:id" element={<ComputationFormPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="branches" element={<BranchesPage />} />
         <Route path="access" element={<AccessPage />} />

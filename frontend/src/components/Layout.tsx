@@ -14,6 +14,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', to: '/dashboard', roles: [], enabled: true },
   { label: 'Clients', to: '/clients', roles: [], enabled: true },
   { label: 'ITR Filings', to: '/filings', roles: [], enabled: true },
+  { label: 'Tax Computations', to: '/computations', roles: [], enabled: true },
   { label: 'News & Updates', to: '/news', roles: [], enabled: true },
   {
     label: 'Branches',
