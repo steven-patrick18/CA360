@@ -253,6 +253,17 @@ export default function ComputationFormPage() {
           </div>
           <div className="flex gap-2">
             {isEdit && (
+              <Link
+                to={`/computations/${id}/preview`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                title="Open print-friendly statement (Print / Save as PDF)"
+              >
+                Preview / PDF
+              </Link>
+            )}
+            {isEdit && (
               <button
                 onClick={handleDelete}
                 disabled={deleting}
@@ -433,21 +444,23 @@ export default function ComputationFormPage() {
                   { value: 'OLD', label: REGIME_LABELS.OLD },
                 ]}
               />
-              <Select
-                label="Age Category"
-                value={inputs.ageCategory}
-                onChange={(v) => setInputs((s) => ({ ...s, ageCategory: v as AgeCategory }))}
-                options={[
-                  { value: 'BELOW_60', label: AGE_LABELS.BELOW_60 },
-                  { value: 'SENIOR_60_TO_79', label: AGE_LABELS.SENIOR_60_TO_79 },
-                  { value: 'SUPER_SENIOR_80_PLUS', label: AGE_LABELS.SUPER_SENIOR_80_PLUS },
-                ]}
-                hint={
-                  isOldRegime
-                    ? 'Affects basic exemption limit (₹2.5L / ₹3L / ₹5L)'
-                    : 'Same exemption (₹3L) for all ages under New regime'
-                }
-              />
+              <div className={isOldRegime ? '' : 'pointer-events-none opacity-60'}>
+                <Select
+                  label="Age Category"
+                  value={inputs.ageCategory}
+                  onChange={(v) => setInputs((s) => ({ ...s, ageCategory: v as AgeCategory }))}
+                  options={[
+                    { value: 'BELOW_60', label: AGE_LABELS.BELOW_60 },
+                    { value: 'SENIOR_60_TO_79', label: AGE_LABELS.SENIOR_60_TO_79 },
+                    { value: 'SUPER_SENIOR_80_PLUS', label: AGE_LABELS.SUPER_SENIOR_80_PLUS },
+                  ]}
+                  hint={
+                    isOldRegime
+                      ? 'Affects basic exemption: Below 60 ₹2.5L · Senior ₹3L · Super Senior ₹5L'
+                      : 'Disabled — under the New Regime (115BAC), age has no effect on exemption (₹3L for AY 24-25/25-26, ₹4L for AY 26-27 — same for all ages).'
+                  }
+                />
+              </div>
             </div>
           </Card>
 

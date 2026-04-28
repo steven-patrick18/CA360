@@ -221,8 +221,17 @@ export default function ComputationsListPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
+                          to={`/computations/${c.id}/preview`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-slate-600 hover:text-blue-600 hover:underline"
+                          title="Open print-friendly statement (Print / Save as PDF)"
+                        >
+                          PDF
+                        </Link>
+                        <Link
                           to={`/computations/${c.id}`}
-                          className="text-xs text-blue-600 hover:underline"
+                          className="ml-3 text-xs text-blue-600 hover:underline"
                         >
                           Open
                         </Link>
