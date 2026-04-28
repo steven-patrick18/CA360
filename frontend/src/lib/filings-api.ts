@@ -42,6 +42,31 @@ export const filingsApi = {
     const { data } = await api.delete<{ ok: true }>(`/filings/${id}`)
     return data
   },
+
+  async importFromJson(clientId: string, file: File): Promise<ImportItrResponse> {
+    const fd = new FormData()
+    fd.append('file', file)
+    const { data } = await api.post<ImportItrResponse>(`/filings/import/${clientId}`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data
+  },
+}
+
+export interface ImportItrResponse {
+  filing: { id: string; assessmentYear: string; status: string }
+  parsed: {
+    pan: string
+    assessmentYear: string
+    itrForm: string | null
+    filedDate: string | null
+    acknowledgementNo: string | null
+    grossIncome: number | null
+    taxPaid: number | null
+    refundAmount: number | null
+    notes: string[]
+  }
+  created: boolean
 }
 
 export const dashboardApi = {

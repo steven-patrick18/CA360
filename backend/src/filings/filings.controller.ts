@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,8 +9,11 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { FilingsService } from './filings.service';
 import { CreateFilingDto } from './dto/create-filing.dto';
 import { UpdateFilingDto } from './dto/update-filing.dto';
@@ -50,5 +54,27 @@ export class FilingsController {
   @Roles('MANAGING_PARTNER', 'PARTNER', 'BRANCH_HEAD')
   remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.filings.remove(id);
+  }
+
+  /**
+   * Import an ITR JSON file (downloaded by the user from the IT Department's
+   * e-Filing portal) and create / update the matching filing record. Same
+   * roles that can create a filing manually can also import.
+   */
+  @Post('import/:clientId')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 }, // ITR JSONs are typically <500 KB
+    }),
+  )
+  importFromJson(
+    @Param('clientId', new ParseUUIDPipe()) clientId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded under field "file"');
+    if (!file.originalname.match(/\.json$/i)) {
+      throw new BadRequestException('Please upload the ITR JSON file (.json)');
+    }
+    return this.filings.importFromJson(clientId, file.buffer);
   }
 }

@@ -12,6 +12,13 @@ import { AuditService } from '../audit/audit.service';
 import { CreateFilingDto } from './dto/create-filing.dto';
 import { UpdateFilingDto } from './dto/update-filing.dto';
 import { ListFilingsQueryDto } from './dto/list-filings.dto';
+import { parseItrJson, type ParsedItr } from './itr-json-parser';
+
+export interface ImportItrResult {
+  filing: { id: string; assessmentYear: string; status: string };
+  parsed: ParsedItr;
+  created: boolean; // false → an existing filing was updated
+}
 
 @Injectable()
 export class FilingsService {
@@ -261,5 +268,99 @@ export class FilingsService {
       payload: { clientId: existing.clientId, assessmentYear: existing.assessmentYear },
     });
     return { ok: true };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Import from ITR JSON (downloaded by the user from the e-Filing portal)
+  // ────────────────────────────────────────────────────────────────────
+
+  async importFromJson(clientId: string, fileBuffer: Buffer): Promise<ImportItrResult> {
+    const firmId = this.firmId();
+    const cs = await this.clientScope();
+
+    const client = await this.prisma.client.findFirst({
+      where: { ...cs, id: clientId },
+    });
+    if (!client) throw new NotFoundException('Client not found or out of scope');
+
+    let json: unknown;
+    try {
+      json = JSON.parse(fileBuffer.toString('utf8'));
+    } catch (e) {
+      throw new BadRequestException(
+        `Could not parse the file as JSON: ${(e as Error).message}`,
+      );
+    }
+
+    let parsed: ParsedItr;
+    try {
+      parsed = parseItrJson(json);
+    } catch (e) {
+      throw new BadRequestException((e as Error).message);
+    }
+
+    // Sanity: PAN in the file must match the client we're importing into.
+    if (client.pan && parsed.pan !== client.pan.toUpperCase()) {
+      throw new BadRequestException(
+        `PAN mismatch — file is for ${parsed.pan}, this client is ${client.pan}. ` +
+          `Make sure you're uploading to the right client.`,
+      );
+    }
+
+    // If the filing was actually filed (we have an ack number), bump status to
+    // FILED unless we already moved past that.
+    const existingFiling = await this.prisma.itrFiling.findUnique({
+      where: { clientId_assessmentYear: { clientId, assessmentYear: parsed.assessmentYear } },
+    });
+
+    const statusFromImport = parsed.acknowledgementNo
+      ? existingFiling?.status === 'ACKNOWLEDGED'
+        ? 'ACKNOWLEDGED'
+        : 'FILED'
+      : existingFiling?.status ?? 'IN_PROCESS';
+
+    const data = {
+      itrForm: parsed.itrForm ?? existingFiling?.itrForm,
+      status: statusFromImport,
+      filedDate: parsed.filedDate ? new Date(parsed.filedDate) : existingFiling?.filedDate,
+      acknowledgementNo: parsed.acknowledgementNo ?? existingFiling?.acknowledgementNo,
+      grossIncome: parsed.grossIncome ?? existingFiling?.grossIncome,
+      taxPaid: parsed.taxPaid ?? existingFiling?.taxPaid,
+      refundAmount: parsed.refundAmount ?? existingFiling?.refundAmount,
+    };
+
+    const filing = await this.prisma.itrFiling.upsert({
+      where: { clientId_assessmentYear: { clientId, assessmentYear: parsed.assessmentYear } },
+      create: {
+        firmId,
+        clientId,
+        assessmentYear: parsed.assessmentYear,
+        ...data,
+      },
+      update: data,
+    });
+
+    await this.audit.log({
+      action: existingFiling ? 'IMPORT_UPDATE' : 'IMPORT_CREATE',
+      entityType: 'itr_filing',
+      entityId: filing.id,
+      payload: {
+        clientId,
+        assessmentYear: parsed.assessmentYear,
+        itrForm: parsed.itrForm,
+        ack: parsed.acknowledgementNo,
+        notes: parsed.notes,
+      },
+    });
+
+    return {
+      filing: {
+        id: filing.id,
+        assessmentYear: filing.assessmentYear,
+        status: filing.status,
+      },
+      parsed,
+      created: !existingFiling,
+    };
   }
 }

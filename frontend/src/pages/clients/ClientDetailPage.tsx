@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import ClientForm from '../../components/ClientForm'
 import DocumentsSection from '../../components/DocumentsSection'
 import FilingFormModal from '../../components/FilingFormModal'
+import FilingImportModal from '../../components/FilingImportModal'
 import Spinner from '../../components/Spinner'
 import { clientsApi, credentialsApi } from '../../lib/clients-api'
 import { filingsApi } from '../../lib/filings-api'
@@ -259,6 +260,7 @@ export default function ClientDetailPage() {
   const [filingModal, setFilingModal] = useState<{ open: boolean; filing?: FilingListItem }>({
     open: false,
   })
+  const [importModalOpen, setImportModalOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -434,12 +436,21 @@ export default function ClientDetailPage() {
               Multi-year tracking for {client.name}
             </p>
           </div>
-          <button
-            onClick={() => setFilingModal({ open: true })}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            + Add filing
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setImportModalOpen(true)}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+              title="Upload an ITR JSON downloaded from the e-Filing portal"
+            >
+              Fetch from JSON
+            </button>
+            <button
+              onClick={() => setFilingModal({ open: true })}
+              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              + Add filing
+            </button>
+          </div>
         </div>
 
         {filings.length === 0 ? (
@@ -505,6 +516,14 @@ export default function ClientDetailPage() {
         filing={filingModal.filing}
         onClose={() => setFilingModal({ open: false })}
         onSaved={() => void reloadFilings()}
+      />
+
+      <FilingImportModal
+        open={importModalOpen}
+        clientId={client.id}
+        clientName={client.name}
+        onClose={() => setImportModalOpen(false)}
+        onImported={() => void reloadFilings()}
       />
     </div>
   )
