@@ -26,18 +26,103 @@ export type FilingStatus =
 
 export type ItrForm = 'ITR1' | 'ITR2' | 'ITR3' | 'ITR4' | 'ITR5' | 'ITR6' | 'ITR7'
 
-export interface ItrDetailRow {
-  label: string
-  value: string | number | null
+export type TaxRegime = 'OLD' | 'NEW' | null
+
+export interface AssesseeBlock {
+  name: string | null
+  fatherName: string | null
+  address: string | null
+  email: string | null
+  mobile: string | null
+  pan: string | null
+  aadhaar: string | null
+  dateOfBirth: string | null
+  gender: string | null
+  status: string | null
+  residentialStatus: string | null
+  natureOfBusiness: string | null
 }
 
-export interface ItrDetailSection {
-  title: string
-  rows: ItrDetailRow[]
+export interface FilingMetaBlock {
+  filingType: string | null
+  filedDate: string | null
+  acknowledgementNo: string | null
+  filedUnderSection: string | null
+  yearEnded: string | null
+  lastYearReturnFiledOn: string | null
+}
+
+export interface IncomeSubRow {
+  label: string
+  amount: number
+}
+
+export interface IncomeHead {
+  label: string
+  subRows: IncomeSubRow[]
+  total: number | null
+}
+
+export interface DeductionRow {
+  code: string
+  label: string
+  amount: number
+}
+
+export interface TaxComputationRow {
+  label: string
+  amount: number | null
+  emphasise?: boolean
+  note?: string
+}
+
+export interface InterestRow {
+  section: string
+  amount: number
+}
+
+export interface TdsTcsRow {
+  name: string
+  tan: string | null
+  amountPaidCredited: number | null
+  totalTaxDeducted: number | null
+  amountClaimedThisYear: number | null
+}
+
+export interface PrepaidChallanRow {
+  bsrCode: string | null
+  date: string | null
+  challanNo: string | null
+  bankName: string | null
+  amount: number | null
+}
+
+export interface BankAccountRow {
+  bankName: string | null
+  accountNo: string | null
+  ifsc: string | null
+  type: string | null
+  primary: boolean
 }
 
 export interface ItrDetails {
-  sections: ItrDetailSection[]
+  assessee: AssesseeBlock
+  filing: FilingMetaBlock
+  regime: TaxRegime
+  income: IncomeHead[]
+  grossTotalIncome: number | null
+  deductions: DeductionRow[]
+  totalDeductions: number | null
+  totalIncome: number | null
+  taxComputation: TaxComputationRow[]
+  totalTaxLiability: number | null
+  interestRows: InterestRow[]
+  tdsRows: TdsTcsRow[]
+  tcsRows: TdsTcsRow[]
+  prepaidChallans: PrepaidChallanRow[]
+  bankAccounts: BankAccountRow[]
+  refundOrPayable: number | null
+  other: { label: string; value: string | number }[]
 }
 
 export interface FilingListItem {

@@ -615,7 +615,14 @@ export default function ClientDetailPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filings.map((f) => {
-                  const expandable = Boolean(f.details?.sections?.length)
+                  const d = f.details
+                  const expandable = Boolean(
+                    d &&
+                      (d.income.length > 0 ||
+                        d.deductions.length > 0 ||
+                        d.taxComputation.length > 0 ||
+                        d.tdsRows.length > 0),
+                  )
                   const isOpen = expandedFilingId === f.id
                   return (
                     <FilingRow
@@ -638,6 +645,10 @@ export default function ClientDetailPage() {
       <DocumentsSection clientId={client.id} />
 
       <FilingFormModal
+        // Force remount whenever the target filing changes, so the modal's
+        // useState re-initialises from the new `filing` prop. Without this
+        // the form opens with stale values from a previous Edit click.
+        key={filingModal.filing?.id ?? 'new'}
         open={filingModal.open}
         clientId={filingModal.filing ? undefined : client.id}
         clientType={filingModal.filing ? undefined : client.typeOfAssessee}
