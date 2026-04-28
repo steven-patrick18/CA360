@@ -19,7 +19,14 @@ interface Source {
 // Many Indian-tax sources publish all content into a single feed but tag items.
 // We classify per-item via `categorize()` below so one feed can populate all
 // three UI categories (Press Releases / Updates / Case Laws).
+// Most Indian government sites (incometax.gov.in, cbic.gov.in, mca.gov.in,
+// icai.org, gstcouncil.gov.in) do NOT publish RSS. We rely on TaxGuru's
+// category feeds because they republish official notifications/circulars
+// from each board, plus LiveLaw / BusinessLine / ET for court rulings + press
+// coverage. The per-item classifier (`categorize()`) splits items into the
+// three UI buckets regardless of which feed they came from.
 const SOURCES: Source[] = [
+  // ── Direct tax (CBDT / Income Tax Department) ─────────────────────
   {
     id: 'taxguru_general',
     name: 'TaxGuru',
@@ -34,6 +41,69 @@ const SOURCES: Source[] = [
     url: 'https://taxguru.in/category/income-tax/feed/',
     homepage: 'https://taxguru.in/category/income-tax/',
   },
+
+  // ── Indirect tax (CBIC: GST + Customs) ────────────────────────────
+  {
+    id: 'taxguru_gst',
+    name: 'TaxGuru — GST',
+    defaultCategory: 'updates',
+    url: 'https://taxguru.in/category/goods-and-service-tax/feed/',
+    homepage: 'https://taxguru.in/category/goods-and-service-tax/',
+  },
+  {
+    id: 'taxguru_custom',
+    name: 'TaxGuru — Customs',
+    defaultCategory: 'updates',
+    url: 'https://taxguru.in/category/custom-duty/feed/',
+    homepage: 'https://taxguru.in/category/custom-duty/',
+  },
+
+  // ── Corporate law / regulators (MCA, SEBI, RBI / FEMA, DGFT) ──────
+  {
+    id: 'taxguru_company_law',
+    name: 'TaxGuru — Company Law (MCA)',
+    defaultCategory: 'updates',
+    url: 'https://taxguru.in/category/company-law/feed/',
+    homepage: 'https://taxguru.in/category/company-law/',
+  },
+  {
+    id: 'taxguru_sebi',
+    name: 'TaxGuru — SEBI',
+    defaultCategory: 'updates',
+    url: 'https://taxguru.in/category/sebi/feed/',
+    homepage: 'https://taxguru.in/category/sebi/',
+  },
+  {
+    id: 'taxguru_rbi',
+    name: 'TaxGuru — RBI / FEMA',
+    defaultCategory: 'updates',
+    url: 'https://taxguru.in/category/rbi/feed/',
+    homepage: 'https://taxguru.in/category/rbi/',
+  },
+  {
+    id: 'taxguru_dgft',
+    name: 'TaxGuru — DGFT',
+    defaultCategory: 'updates',
+    url: 'https://taxguru.in/category/dgft/feed/',
+    homepage: 'https://taxguru.in/category/dgft/',
+  },
+
+  // ── Press / mainstream news with a tax angle ──────────────────────
+  {
+    id: 'bl_economy',
+    name: 'BusinessLine — Economy',
+    defaultCategory: 'press_release',
+    url: 'https://www.thehindubusinessline.com/economy/feeder/default.rss',
+    homepage: 'https://www.thehindubusinessline.com/economy/',
+  },
+
+  // Sources we tried and dropped (kept here as a record so we don't repeat
+  // the same trial later — uncomment to retry if they ever come back online):
+  //   - https://www.livelaw.in/rss-feed/news.xml   404 as of 2026-04-29
+  //   - https://www.livelaw.in/rss-feed/category/tax-cases.xml   404
+  //   - https://taxguru.in/category/ca-ca-cma/feed/   404 (slug changed)
+  //   - https://economictimes.indiatimes.com/wealth/tax/rssfeeds/40280812.cms   empty
+  //   - https://pib.gov.in/RssMainx.aspx (any param combo)   malformed XML
 ];
 
 /**
