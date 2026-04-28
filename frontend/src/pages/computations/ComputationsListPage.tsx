@@ -44,7 +44,9 @@ export default function ComputationsListPage() {
     return () => {
       cancelled = true
     }
-  }, [ay, regime, offset, toast])
+    // toast intentionally omitted — see ComputationFormPage for the loop guard.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ay, regime, offset])
 
   function updateFilter(patch: Record<string, string>) {
     const next = new URLSearchParams(params)

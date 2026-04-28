@@ -43,12 +43,16 @@ export default function ComputationFormPage() {
   const [planOpen, setPlanOpen] = useState(false)
   const [targetTax, setTargetTax] = useState<number>(10000)
 
-  // Load clients (and existing computation if editing)
+  // Load clients on mount.
+  // NOTE: deps are intentionally empty. `toast` from useToast() is rebuilt on
+  // every ToastProvider render, so including it would re-fire this effect each
+  // time toast.error() runs — turning any persistent API failure into an
+  // infinite request loop.
   useEffect(() => {
     let cancelled = false
     setLoadingMeta(true)
     clientsApi
-      .list({ limit: 500 })
+      .list({ limit: 200 })
       .then((res) => {
         if (!cancelled) setClients(res.items)
       })
@@ -59,8 +63,11 @@ export default function ComputationFormPage() {
     return () => {
       cancelled = true
     }
-  }, [toast])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
+  // Same toast-loop guard as the clients effect — only re-fetch when `id`
+  // changes, never on a re-render caused by a toast.
   useEffect(() => {
     if (!id) return
     let cancelled = false
@@ -87,7 +94,8 @@ export default function ComputationFormPage() {
     return () => {
       cancelled = true
     }
-  }, [id, toast])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
 
   // Live calculation
   const result = useMemo(() => compute(inputs), [inputs])
