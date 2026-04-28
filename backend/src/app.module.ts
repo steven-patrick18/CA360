@@ -18,6 +18,8 @@ import { ImportModule } from './import/import.module';
 import { ExportModule } from './export/export.module';
 import { StorageModule } from './storage/storage.module';
 import { DocumentsModule } from './documents/documents.module';
+import { ReportsModule } from './reports/reports.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { DocumentsModule } from './documents/documents.module';
     ExportModule,
     StorageModule,
     DocumentsModule,
+    ReportsModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

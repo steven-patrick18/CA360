@@ -112,6 +112,140 @@ export const importApi = {
   },
 }
 
+// ─── Reports ──────────────────────────────────────────────────────────
+
+export interface FilingsSummaryRow {
+  assessmentYear: string
+  status: string
+  count: number
+  refundAmount: string | null
+  taxPaid: string | null
+  grossIncome: string | null
+}
+
+export interface StaffWorkloadRow {
+  id: string
+  name: string
+  email: string
+  role: string
+  branchId: string | null
+  assignedClients: number
+  pendingFilingsAsPreparer: number
+}
+
+export interface BranchWorkloadRow {
+  id: string
+  name: string
+  city: string
+  isHq: boolean
+  activeClients: number
+  pendingFilings: number
+}
+
+export interface UpcomingDueFiling {
+  id: string
+  assessmentYear: string
+  itrForm: string | null
+  status: string
+  dueDate: string | null
+  filedDate: string | null
+  client: { id: string; srNo: number; name: string; pan: string | null }
+  preparedBy: { id: string; name: string } | null
+}
+
+export const reportsApi = {
+  async filingsSummary(): Promise<FilingsSummaryRow[]> {
+    const { data } = await api.get<FilingsSummaryRow[]>('/reports/filings-summary')
+    return data
+  },
+  async workloadByStaff(): Promise<StaffWorkloadRow[]> {
+    const { data } = await api.get<StaffWorkloadRow[]>('/reports/workload-by-staff')
+    return data
+  },
+  async workloadByBranch(): Promise<BranchWorkloadRow[]> {
+    const { data } = await api.get<BranchWorkloadRow[]>('/reports/workload-by-branch')
+    return data
+  },
+  async upcomingDue(days: number): Promise<UpcomingDueFiling[]> {
+    const { data } = await api.get<UpcomingDueFiling[]>('/reports/upcoming-due', {
+      params: { days },
+    })
+    return data
+  },
+  async overdue(): Promise<UpcomingDueFiling[]> {
+    const { data } = await api.get<UpcomingDueFiling[]>('/reports/overdue')
+    return data
+  },
+}
+
+// ─── Audit log ─────────────────────────────────────────────────────────
+
+export interface AuditLogItem {
+  id: string
+  action: string
+  entityType: string
+  entityId: string | null
+  ipAddress: string | null
+  userAgent: string | null
+  payloadJson: Record<string, unknown> | null
+  createdAt: string
+  user: { id: string; name: string; email: string } | null
+}
+
+export interface ListAuditParams {
+  userId?: string
+  action?: string
+  entityType?: string
+  from?: string
+  to?: string
+  limit?: number
+  offset?: number
+}
+
+export const auditApi = {
+  async list(params: ListAuditParams = {}): Promise<{
+    items: AuditLogItem[]
+    total: number
+    limit: number
+    offset: number
+  }> {
+    const { data } = await api.get('/audit-log', { params })
+    return data as never
+  },
+}
+
+// ─── Profile (self) ────────────────────────────────────────────────────
+
+export interface MyProfile {
+  id: string
+  firmId: string
+  firmName: string
+  branchId: string | null
+  branchName: string | null
+  name: string
+  email: string
+  mobile: string | null
+  role: string
+  twoFaEnabled: boolean
+  lastLoginAt: string | null
+  createdAt: string
+}
+
+export const profileApi = {
+  async me(): Promise<MyProfile> {
+    const { data } = await api.get<MyProfile>('/me')
+    return data
+  },
+  async update(payload: { name?: string; mobile?: string }) {
+    const { data } = await api.patch('/me', payload)
+    return data
+  },
+  async changePassword(payload: { currentPassword: string; newPassword: string }) {
+    const { data } = await api.post('/me/change-password', payload)
+    return data
+  },
+}
+
 export const exportApi = {
   async download(path: '/export/clients' | '/export/filings' | '/export/audit-log') {
     const res = await api.get(path, { responseType: 'blob' })

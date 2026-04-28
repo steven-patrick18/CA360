@@ -10,6 +10,9 @@ import UsersPage from './pages/admin/UsersPage'
 import BranchesPage from './pages/admin/BranchesPage'
 import ImportClientsPage from './pages/admin/ImportClientsPage'
 import AccessPage from './pages/admin/AccessPage'
+import ReportsPage from './pages/admin/ReportsPage'
+import AuditLogPage from './pages/admin/AuditLogPage'
+import SettingsPage from './pages/SettingsPage'
 import Layout from './components/Layout'
 import { useAuth } from './lib/auth'
 
@@ -48,6 +51,9 @@ function App() {
         <Route path="users" element={<UsersPage />} />
         <Route path="branches" element={<BranchesPage />} />
         <Route path="access" element={<AccessPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="audit" element={<AuditLogPage />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="clients/import" element={<ImportClientsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -34,15 +34,15 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Reports',
     to: '/reports',
     roles: ['MANAGING_PARTNER', 'PARTNER', 'BRANCH_HEAD'],
-    enabled: false,
+    enabled: true,
   },
   {
     label: 'Audit Log',
     to: '/audit',
     roles: ['MANAGING_PARTNER'],
-    enabled: false,
+    enabled: true,
   },
-  { label: 'Settings', to: '/settings', roles: [], enabled: false },
+  { label: 'Settings', to: '/settings', roles: [], enabled: true },
 ]
 
 export default function Layout() {
