@@ -303,6 +303,15 @@ function FilingRow({ filing: f, expandable, isOpen, onToggle, onEdit }: FilingRo
         </td>
         <td className="py-2 text-right">
           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+            <Link
+              to={`/filings/${f.id}/preview`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-slate-600 hover:text-blue-600 hover:underline"
+              title="Open print-friendly Computation of Income"
+            >
+              Preview
+            </Link>
             {f.hasSourceJson && (
               <button
                 type="button"

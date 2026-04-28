@@ -6,6 +6,7 @@ import ClientsListPage from './pages/clients/ClientsListPage'
 import ClientNewPage from './pages/clients/ClientNewPage'
 import ClientDetailPage from './pages/clients/ClientDetailPage'
 import FilingsListPage from './pages/filings/FilingsListPage'
+import FilingPreviewPage from './pages/filings/FilingPreviewPage'
 import UsersPage from './pages/admin/UsersPage'
 import BranchesPage from './pages/admin/BranchesPage'
 import ImportClientsPage from './pages/admin/ImportClientsPage'
@@ -35,6 +36,15 @@ function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/2fa" element={<TwoFaPage />} />
+      {/* Print-friendly preview lives outside the Layout (no sidebar/header) */}
+      <Route
+        path="/filings/:id/preview"
+        element={
+          <ProtectedRoute>
+            <FilingPreviewPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/"
         element={
