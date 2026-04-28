@@ -2,10 +2,12 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { filingsApi } from '../lib/filings-api'
 import { clientsApi, metaApi } from '../lib/clients-api'
 import {
+  APPLICABLE_ITR_FORMS,
   FILING_STATUS_LABELS,
   ITR_FORM_LABELS,
   recentAssessmentYears,
   type ClientListItem,
+  type ClientType,
   type CreateFilingPayload,
   type FilingListItem,
   type FilingStatus,
@@ -23,13 +25,22 @@ interface Props {
   onSaved: (filing: FilingListItem) => void
   /** When set, scopes the create form to a single client (read-only client selector). */
   clientId?: string
+  /** Pre-known type of the client at clientId, lets us filter ITR forms upfront. */
+  clientType?: ClientType
   /** When set, opens in edit mode for this filing. */
   filing?: FilingListItem
 }
 
 const AY_REGEX = /^(\d{4})-(\d{2})$/
 
-export default function FilingFormModal({ open, onClose, onSaved, clientId, filing }: Props) {
+export default function FilingFormModal({
+  open,
+  onClose,
+  onSaved,
+  clientId,
+  clientType,
+  filing,
+}: Props) {
   const toast = useToast()
   const isEdit = !!filing
 
@@ -57,6 +68,29 @@ export default function FilingFormModal({ open, onClose, onSaved, clientId, fili
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Determine the active client's type to filter the ITR Form dropdown.
+  // Priority: explicit prop (passed from ClientDetailPage) → filing being edited
+  // → look up by selected clientId in the loaded clients list.
+  const activeClientType: ClientType | undefined =
+    clientType ??
+    filing?.client.typeOfAssessee ??
+    clients.find((c) => c.id === values.clientId)?.typeOfAssessee
+
+  const applicableForms: ItrForm[] = activeClientType
+    ? APPLICABLE_ITR_FORMS[activeClientType]
+    : (Object.keys(ITR_FORM_LABELS) as ItrForm[])
+
+  // If the chosen form isn't valid for the (now-known) client type, clear it
+  // so the user makes a fresh, valid choice.
+  useEffect(() => {
+    if (values.itrForm && activeClientType) {
+      if (!applicableForms.includes(values.itrForm as ItrForm)) {
+        setValues((s) => ({ ...s, itrForm: '' }))
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClientType])
 
   useEffect(() => {
     if (!open) return
@@ -211,7 +245,12 @@ export default function FilingFormModal({ open, onClose, onSaved, clientId, fili
                   value={values.itrForm}
                   onChange={(e) => set('itrForm', e.target.value as ItrForm | '')}
                   placeholder="Not yet decided"
-                  options={Object.entries(ITR_FORM_LABELS).map(([v, l]) => ({ value: v, label: l }))}
+                  hint={
+                    activeClientType
+                      ? `Showing forms applicable for ${activeClientType.replace('_', '/')}`
+                      : undefined
+                  }
+                  options={applicableForms.map((v) => ({ value: v, label: ITR_FORM_LABELS[v] }))}
                 />
 
                 <SelectField

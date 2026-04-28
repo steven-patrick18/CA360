@@ -49,32 +49,35 @@ export class DashboardController {
   @Get('stats')
   async stats() {
     const cs = await this.clientScope();
+    // Only count filings against ACTIVE clients — archived/inactive clients shouldn't
+    // pad the pending counts or appear on the pipeline.
+    const csActive = { ...cs, status: 'ACTIVE' as const };
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
     const [activeClients, totalClients, pendingFilings, filedThisMonth] = await Promise.all([
-      this.prisma.client.count({ where: { ...cs, status: 'ACTIVE' } }),
+      this.prisma.client.count({ where: csActive }),
       this.prisma.client.count({ where: cs }),
       this.prisma.itrFiling.count({
         where: {
-          client: cs,
+          client: csActive,
           status: { in: [...PENDING_STATUSES] },
         },
       }),
       this.prisma.itrFiling.count({
         where: {
-          client: cs,
+          client: csActive,
           filedDate: { gte: monthStart, lt: monthEnd },
         },
       }),
     ]);
 
-    // Status breakdown for pending pipeline visualization
+    // Status breakdown — only for active clients
     const pipeline = await this.prisma.itrFiling.groupBy({
       by: ['status'],
-      where: { client: cs },
+      where: { client: csActive },
       _count: { _all: true },
     });
 

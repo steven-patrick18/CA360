@@ -497,6 +497,7 @@ export default function ClientDetailPage() {
       <FilingFormModal
         open={filingModal.open}
         clientId={filingModal.filing ? undefined : client.id}
+        clientType={filingModal.filing ? undefined : client.typeOfAssessee}
         filing={filingModal.filing}
         onClose={() => setFilingModal({ open: false })}
         onSaved={() => void reloadFilings()}

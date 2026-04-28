@@ -43,7 +43,7 @@ export interface FilingListItem {
   filedById: string | null
   createdAt: string
   updatedAt: string
-  client: { id: string; srNo: number; name: string; pan: string | null }
+  client: { id: string; srNo: number; name: string; pan: string | null; typeOfAssessee: ClientType }
   preparedBy: { id: string; name: string } | null
   filedBy: { id: string; name: string } | null
 }
@@ -216,6 +216,23 @@ export const ITR_FORM_LABELS: Record<ItrForm, string> = {
   ITR5: 'ITR-5',
   ITR6: 'ITR-6',
   ITR7: 'ITR-7',
+}
+
+/**
+ * Which ITR forms are applicable for each assessee type, per current
+ * Income Tax Department rules. Used to narrow the form picker when a
+ * client is selected. OTHER falls back to all forms.
+ */
+export const APPLICABLE_ITR_FORMS: Record<ClientType, ItrForm[]> = {
+  INDIVIDUAL: ['ITR1', 'ITR2', 'ITR3', 'ITR4'],
+  HUF: ['ITR2', 'ITR3', 'ITR4'],
+  PROPRIETORSHIP: ['ITR3', 'ITR4'],
+  PARTNERSHIP: ['ITR5'],
+  LLP: ['ITR5'],
+  COMPANY: ['ITR6'],
+  TRUST: ['ITR7'],
+  AOP_BOI: ['ITR5'],
+  OTHER: ['ITR1', 'ITR2', 'ITR3', 'ITR4', 'ITR5', 'ITR6', 'ITR7'],
 }
 
 /** Generate a list of recent assessment years for dropdowns. e.g. ['2026-27', '2025-26', ...] */

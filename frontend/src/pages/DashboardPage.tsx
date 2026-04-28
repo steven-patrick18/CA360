@@ -149,42 +149,58 @@ export default function DashboardPage() {
             })()}
           </div>
 
-          {pipelineTotal > 0 && (
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-medium text-slate-900">Filing pipeline</h2>
-              <p className="mt-1 mb-3 text-xs text-slate-500">
-                Distribution of {pipelineTotal} filings across all assessment years
-              </p>
-              <div className="flex h-3 overflow-hidden rounded-full">
-                {PIPELINE_ORDER.map((s) => {
-                  const count = stats.pipeline[s] ?? 0
-                  if (!count) return null
-                  const pct = (count / pipelineTotal) * 100
-                  return (
-                    <div
-                      key={s}
-                      className={PIPELINE_COLORS[s]}
-                      style={{ width: `${pct}%` }}
-                      title={`${FILING_STATUS_LABELS[s]}: ${count}`}
-                    />
-                  )
-                })}
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-medium text-slate-900">Filings by status</h2>
+            <p className="mt-1 mb-3 text-xs text-slate-500">
+              {pipelineTotal > 0
+                ? `${pipelineTotal} filings for active clients across all assessment years. Click any card to drill in.`
+                : 'No filings yet for active clients.'}
+            </p>
+            {pipelineTotal > 0 ? (
+              <>
+                <div className="mb-4 flex h-3 overflow-hidden rounded-full">
+                  {PIPELINE_ORDER.map((s) => {
+                    const count = stats.pipeline[s] ?? 0
+                    if (!count) return null
+                    const pct = (count / pipelineTotal) * 100
+                    return (
+                      <div
+                        key={s}
+                        className={PIPELINE_COLORS[s]}
+                        style={{ width: `${pct}%` }}
+                        title={`${FILING_STATUS_LABELS[s]}: ${count}`}
+                      />
+                    )
+                  })}
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {PIPELINE_ORDER.map((s) => {
+                    const count = stats.pipeline[s] ?? 0
+                    if (!count) return null
+                    return (
+                      <Link
+                        key={s}
+                        to={`/filings?status=${s}`}
+                        className="block rounded-md border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-indigo-300 hover:bg-indigo-50"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-block h-2 w-2 rounded-full ${PIPELINE_COLORS[s]}`} />
+                          <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                            {FILING_STATUS_LABELS[s]}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-2xl font-semibold text-slate-900">{count}</div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-md border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+                Add a filing to see status counts here.
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4">
-                {PIPELINE_ORDER.map((s) => {
-                  const count = stats.pipeline[s] ?? 0
-                  if (!count) return null
-                  return (
-                    <div key={s} className="flex items-center gap-2">
-                      <span className={`inline-block h-2 w-2 rounded-full ${PIPELINE_COLORS[s]}`} />
-                      <span className="text-slate-700">{FILING_STATUS_LABELS[s]}</span>
-                      <span className="ml-auto font-mono text-slate-500">{count}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </>
       ) : null}
 

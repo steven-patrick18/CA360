@@ -156,7 +156,7 @@ export class FilingsService {
         take: query.limit,
         skip: query.offset,
         include: {
-          client: { select: { id: true, srNo: true, name: true, pan: true } },
+          client: { select: { id: true, srNo: true, name: true, pan: true, typeOfAssessee: true } },
           preparedBy: { select: { id: true, name: true } },
           filedBy: { select: { id: true, name: true } },
         },
@@ -172,7 +172,9 @@ export class FilingsService {
     const filing = await this.prisma.itrFiling.findFirst({
       where: { ...scope, id },
       include: {
-        client: { select: { id: true, srNo: true, name: true, pan: true, branchId: true } },
+        client: {
+          select: { id: true, srNo: true, name: true, pan: true, branchId: true, typeOfAssessee: true },
+        },
         preparedBy: { select: { id: true, name: true } },
         filedBy: { select: { id: true, name: true } },
       },
