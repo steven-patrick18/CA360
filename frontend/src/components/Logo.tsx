@@ -1,25 +1,31 @@
+import { useAuth } from '../lib/auth'
+
 interface LogoProps {
   size?: number
   className?: string
 }
 
 /**
- * Renders /ca-logo.svg as an <img>. To use your firm's official logo
- * (e.g. the ICAI-issued CA INDIA mark you're entitled to use as a member),
- * just replace /public/ca-logo.svg with that file. Every screen that
- * imports this component will pick up the new artwork on next refresh —
- * no code changes needed. PNG works too: rename your file to
- * ca-logo.svg, OR change the src below to /ca-logo.png.
+ * Renders the firm's uploaded logo if available, otherwise falls back to the
+ * placeholder at /ca-logo.svg. Managing Partners can upload a logo from
+ * Settings → Firm. The placeholder file can also be replaced directly on
+ * disk if you'd rather hard-bake the logo into the build.
  */
 export default function Logo({ size = 32, className = '' }: LogoProps) {
+  // useAuth throws when used outside AuthProvider — login & 2FA pages render
+  // before the provider's user is loaded, but the provider itself wraps both,
+  // so this is safe. We just guard against the user being null.
+  const { user } = useAuth()
+  const src = user?.firmLogoDataUrl || '/ca-logo.svg'
+
   return (
     <img
-      src="/ca-logo.svg"
+      src={src}
       width={size}
       height={size}
       alt="Firm logo"
       className={className}
-      style={{ width: size, height: size, display: 'block' }}
+      style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
     />
   )
 }

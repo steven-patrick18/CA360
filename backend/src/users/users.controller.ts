@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -47,5 +48,11 @@ export class UsersController {
   @Roles('MANAGING_PARTNER')
   resetPassword(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.users.resetPassword(id);
+  }
+
+  @Delete(':id')
+  @Roles('MANAGING_PARTNER')
+  remove(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.users.remove(id);
   }
 }

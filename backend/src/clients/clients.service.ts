@@ -275,6 +275,30 @@ export class ClientsService {
     return updated;
   }
 
+  /**
+   * Hard-delete the client and (via Prisma cascade) all related credentials,
+   * filings, and documents. Audit-logged with the client snapshot so the trail
+   * survives even though the row is gone. Managing-Partner-only at the
+   * controller layer.
+   */
+  async permanentDelete(id: string) {
+    const firmId = this.firmId();
+    const client = await this.prisma.client.findFirst({
+      where: { id, firmId },
+      select: { id: true, name: true, srNo: true, pan: true, status: true },
+    });
+    if (!client) throw new NotFoundException('Client not found');
+
+    await this.prisma.client.delete({ where: { id } });
+    await this.audit.log({
+      action: 'PERMANENT_DELETE',
+      entityType: 'client',
+      entityId: id,
+      payload: client,
+    });
+    return { ok: true };
+  }
+
   // ────────────────────────────────────────────────────────────────────
   // Helpers
   // ────────────────────────────────────────────────────────────────────

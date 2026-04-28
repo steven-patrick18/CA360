@@ -47,6 +47,10 @@ export const clientsApi = {
     const { data } = await api.delete<ClientListItem>(`/clients/${id}`)
     return data
   },
+  async permanentDelete(id: string): Promise<{ ok: true }> {
+    const { data } = await api.delete<{ ok: true }>(`/clients/${id}/permanent`)
+    return data
+  },
 }
 
 export const credentialsApi = {

@@ -189,6 +189,56 @@ export class UsersService {
     return { tempPassword };
   }
 
+  /**
+   * Hard-delete a user. Refuses to delete:
+   *   - yourself (would lock you out)
+   *   - the only Managing Partner left in the firm (firm needs an owner)
+   *   - a user who is the head of any branch (reassign first)
+   *
+   * Related rows (assigned clients, prepared/filed filings, audit_log entries,
+   * uploaded documents) keep their integrity via Prisma's onDelete: SetNull /
+   * Restrict configured in schema.prisma.
+   */
+  async remove(id: string) {
+    if (id === this.currentUserId()) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+
+    const user = await this.findOne(id);
+    const firmId = this.firmId();
+
+    // Don't allow removing the last Managing Partner.
+    if (user.role === 'MANAGING_PARTNER') {
+      const otherMps = await this.prisma.user.count({
+        where: { firmId, role: 'MANAGING_PARTNER', id: { not: id }, isActive: true },
+      });
+      if (otherMps === 0) {
+        throw new BadRequestException(
+          'Cannot delete the only Managing Partner. Promote another user first.',
+        );
+      }
+    }
+
+    // Branches with this user as head must be reassigned first.
+    const headedBranches = await this.prisma.branch.count({
+      where: { firmId, headUserId: id },
+    });
+    if (headedBranches > 0) {
+      throw new BadRequestException(
+        `This user is the head of ${headedBranches} branch(es). Assign a new head first.`,
+      );
+    }
+
+    await this.prisma.user.delete({ where: { id } });
+    await this.audit.log({
+      action: 'DELETE',
+      entityType: 'user',
+      entityId: id,
+      payload: { email: user.email, role: user.role },
+    });
+    return { ok: true };
+  }
+
   private diffUser(
     before: Record<string, unknown>,
     after: Record<string, unknown>,

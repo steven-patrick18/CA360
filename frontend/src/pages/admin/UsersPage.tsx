@@ -257,6 +257,25 @@ export default function UsersPage() {
     }
   }
 
+  async function handleDelete(user: UserDetail) {
+    if (
+      !window.confirm(
+        `Permanently delete ${user.name} (${user.email})?\n\n` +
+          `This cannot be undone. Their assigned clients become unassigned, and ` +
+          `their name on past audit-log entries / filings becomes blank. If you ` +
+          `just want to revoke access, edit them and toggle "Active" off instead.`,
+      )
+    )
+      return
+    try {
+      await usersApi.remove(user.id)
+      toast.success(`Deleted ${user.name}`)
+      reload()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -341,6 +360,12 @@ export default function UsersPage() {
                         className="ml-3 text-xs text-amber-700 hover:underline"
                       >
                         Reset password
+                      </button>
+                      <button
+                        onClick={() => handleDelete(u)}
+                        className="ml-3 text-xs text-red-600 hover:underline"
+                      >
+                        Delete
                       </button>
                     </td>
                   </tr>

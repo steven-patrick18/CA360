@@ -49,4 +49,10 @@ export class ClientsController {
   archive(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.clients.archive(id);
   }
+
+  @Delete(':id/permanent')
+  @Roles('MANAGING_PARTNER')
+  permanentDelete(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.clients.permanentDelete(id);
+  }
 }

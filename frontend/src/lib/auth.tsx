@@ -13,6 +13,7 @@ export interface CurrentUser {
   id: string
   firmId: string
   firmName: string
+  firmLogoDataUrl: string | null
   branchId: string | null
   branchName: string | null
   name: string
@@ -25,6 +26,8 @@ interface AuthContextValue {
   isLoading: boolean
   setSession: (token: string) => Promise<void>
   logout: () => void
+  /** Refetch /auth/me — used after a firm setting like name or logo changes. */
+  refresh: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -64,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, setSession, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, setSession, logout, refresh: loadMe }}>
       {children}
     </AuthContext.Provider>
   )
