@@ -49,6 +49,31 @@ export interface TaxesPaidInputs {
   selfAssessmentTax: number
 }
 
+/**
+ * Inputs for interest u/s 234A/B/C. Optional in CalcInputs — when omitted or
+ * `enabled=false`, no interest is added to the liability. When enabled, the
+ * calculator uses these to compute the three statutory interest charges.
+ */
+export interface InterestInputs {
+  enabled: boolean
+  /** ISO date string (YYYY-MM-DD). If null/empty, today is used. */
+  dateOfFiling: string | null
+  /** Whether the assessee is liable to tax audit u/s 44AB — moves due date to 31 Oct. */
+  hasTaxAudit: boolean
+  /**
+   * Quarterly breakdown of advance tax for 234C computation. Sum should
+   * normally match taxesPaid.advanceTax. When zero (and total > 0), the
+   * calculator assumes the worst case: full advance tax was paid only by
+   * 15 March, so 234C interest accrues on the earlier installments.
+   */
+  advanceTaxBreakdown: {
+    q1ByJun15: number
+    q2BySep15: number
+    q3ByDec15: number
+    q4ByMar15: number
+  }
+}
+
 export interface CalcInputs {
   assessmentYear: AssessmentYear
   regime: TaxRegime
@@ -56,6 +81,8 @@ export interface CalcInputs {
   income: IncomeInputs
   deductions: DeductionInputs
   taxesPaid: TaxesPaidInputs
+  /** Optional — when omitted or disabled, no interest is added. */
+  interest?: InterestInputs
 }
 
 export interface SlabApplied {
@@ -73,6 +100,17 @@ export interface DeductionApplied {
   /** What we actually allowed after caps. */
   allowed: number
   cappedAt?: number
+}
+
+export interface InterestBreakdown {
+  /** 234A — late filing of return. */
+  s234A: number
+  /** 234B — default in payment of advance tax. */
+  s234B: number
+  /** 234C — deferment of advance tax (per-installment). */
+  s234C: number
+  /** Plain-English explanation of how each charge was computed (for the UI). */
+  explanations: { section: '234A' | '234B' | '234C'; text: string }[]
 }
 
 export interface CalcOutput {
@@ -94,8 +132,13 @@ export interface CalcOutput {
   grossTaxLiability: number
   rebate87A: number
   netTaxLiability: number
+  /** Total of 234A + 234B + 234C; 0 when interest is disabled. */
+  interest: InterestBreakdown
+  totalInterest: number
+  /** Net tax liability + total interest. */
+  totalLiabilityWithInterest: number
   totalTaxesPaid: number
-  /** Positive = payable, negative = refund. */
+  /** Positive = payable, negative = refund. Includes interest. */
   taxPayable: number
   /** Sign-flipped magnitude — convenient for UI labels. */
   refundDue: number
@@ -361,7 +404,49 @@ export function compute(input: CalcInputs): CalcOutput {
     Math.max(0, input.taxesPaid.advanceTax) +
     Math.max(0, input.taxesPaid.selfAssessmentTax)
 
-  const taxPayable = round(netTaxLiability - totalPaid)
+  // 12. Interest u/s 234A/B/C — only when explicitly enabled
+  const interestBlock: InterestBreakdown = {
+    s234A: 0,
+    s234B: 0,
+    s234C: 0,
+    explanations: [],
+  }
+  if (input.interest?.enabled) {
+    const filingDate = parseDate(input.interest.dateOfFiling)
+    const tdsTcs = Math.max(0, input.taxesPaid.tds)
+    const advance = Math.max(0, input.taxesPaid.advanceTax)
+    const prepaidTotal = tdsTcs + advance + Math.max(0, input.taxesPaid.selfAssessmentTax)
+
+    const a = compute234A(netTaxLiability, prepaidTotal, input.assessmentYear, filingDate, input.interest.hasTaxAudit)
+    const b = compute234B(netTaxLiability, tdsTcs, advance, input.assessmentYear, filingDate)
+    const c = compute234C(netTaxLiability, tdsTcs, input.interest.advanceTaxBreakdown)
+
+    interestBlock.s234A = a.amount
+    interestBlock.s234B = b.amount
+    interestBlock.s234C = c.amount
+    interestBlock.explanations = [
+      { section: '234A', text: a.explanation },
+      { section: '234B', text: b.explanation },
+      { section: '234C', text: c.explanation },
+    ]
+
+    // Sanity: if breakdown sum > total advance tax, flag it.
+    const breakdownSum =
+      input.interest.advanceTaxBreakdown.q1ByJun15 +
+      input.interest.advanceTaxBreakdown.q2BySep15 +
+      input.interest.advanceTaxBreakdown.q3ByDec15 +
+      input.interest.advanceTaxBreakdown.q4ByMar15
+    if (breakdownSum > advance + 1) {
+      notes.push(
+        `Quarterly advance tax breakdown (₹${fmt(breakdownSum)}) exceeds the total advance tax entered (₹${fmt(advance)}). Reconcile the two for an accurate 234B/234C.`,
+      )
+    }
+  }
+
+  const totalInterest = interestBlock.s234A + interestBlock.s234B + interestBlock.s234C
+  const totalLiabilityWithInterest = round(netTaxLiability + totalInterest)
+
+  const taxPayable = round(totalLiabilityWithInterest - totalPaid)
   const refundDue = taxPayable < 0 ? -taxPayable : 0
   const payable = taxPayable > 0 ? taxPayable : 0
 
@@ -379,6 +464,9 @@ export function compute(input: CalcInputs): CalcOutput {
     grossTaxLiability: round(gross),
     rebate87A: rebate,
     netTaxLiability: round(netTaxLiability),
+    interest: interestBlock,
+    totalInterest,
+    totalLiabilityWithInterest,
     totalTaxesPaid: round(totalPaid),
     taxPayable: payable - refundDue, // signed: + payable, - refund
     refundDue,
@@ -388,6 +476,172 @@ export function compute(input: CalcInputs): CalcOutput {
 
 function anyDeductionEntered(d: DeductionInputs): boolean {
   return d.s80C > 0 || d.s80CCD1B > 0 || d.s80D > 0 || d.s80G > 0 || d.s80TTA > 0 || d.s80TTB > 0
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Interest u/s 234A / 234B / 234C
+//
+// Rate is 1% per month or part thereof for all three sections (Sec 234).
+// Computed on the *net tax liability* less prepaid taxes.
+//
+// 234A: Interest for delay in filing the return.
+//   - Trigger: filed after due date (31 Jul of AY non-audit, 31 Oct of AY
+//     for audit cases).
+//   - Period: from due date + 1 day to actual filing date, rounded up
+//     to next full month.
+//   - Base: tax liability minus TDS / TCS / advance tax / SAT.
+//
+// 234B: Default in payment of advance tax.
+//   - Trigger: assessed tax (= total tax - TDS/TCS) > ₹10,000 AND advance
+//     tax paid < 90% of assessed tax.
+//   - Period: 1 April of AY to date of payment of SAT (or filing date
+//     as a proxy).
+//   - Base: assessed tax minus advance tax paid.
+//
+// 234C: Deferment of advance tax (per-installment).
+//   - Q1 (15 Jun): need ≥ 15% of assessed tax (safe harbour 12%).
+//   - Q2 (15 Sep): need ≥ 45% of assessed tax (safe harbour 36%).
+//   - Q3 (15 Dec): need ≥ 75% of assessed tax.
+//   - Q4 (15 Mar): need 100% of assessed tax.
+//   - Shortfall × 1% × months (3 for Q1/Q2/Q3, 1 for Q4).
+//
+// Simplifications (v1):
+//   - 234A and 234B both use the same date as both filing date and
+//     SAT-payment date (most common case).
+//   - 44AD presumptive special rule for 234C (only Q4 applies) is NOT
+//     handled — would over-charge interest for those clients.
+//   - No marginal-rebate edge cases.
+// ────────────────────────────────────────────────────────────────────
+
+const INTEREST_RATE_PER_MONTH = 0.01
+
+/** Months between two dates, rounded up to next full month. */
+function monthsCeil(from: Date, to: Date): number {
+  if (to <= from) return 0
+  const ms = to.getTime() - from.getTime()
+  const days = ms / (1000 * 60 * 60 * 24)
+  return Math.ceil(days / 30)
+}
+
+/** AY "2024-25" → start year 2024 (= April 2024). */
+function ayStartYear(ay: AssessmentYear): number {
+  return parseInt(ay.split('-')[0], 10)
+}
+
+/** Due date for filing the return. */
+function dueDate(ay: AssessmentYear, hasTaxAudit: boolean): Date {
+  const y = ayStartYear(ay)
+  // Months are 0-indexed in JS Date.
+  return hasTaxAudit ? new Date(y, 9, 31) : new Date(y, 6, 31) // 31 Oct vs 31 Jul
+}
+
+function parseDate(s: string | null): Date {
+  if (!s) return new Date()
+  const d = new Date(s)
+  return isNaN(d.getTime()) ? new Date() : d
+}
+
+function compute234A(
+  netTaxLiability: number,
+  prepaid: number,
+  ay: AssessmentYear,
+  filingDate: Date,
+  hasTaxAudit: boolean,
+): { amount: number; explanation: string } {
+  const due = dueDate(ay, hasTaxAudit)
+  if (filingDate <= due) {
+    return { amount: 0, explanation: 'Return filed on or before due date — no 234A.' }
+  }
+  const shortfall = Math.max(0, netTaxLiability - prepaid)
+  if (shortfall <= 0) {
+    return { amount: 0, explanation: 'No unpaid tax — no 234A.' }
+  }
+  const months = monthsCeil(due, filingDate)
+  const amount = round(shortfall * INTEREST_RATE_PER_MONTH * months)
+  return {
+    amount,
+    explanation: `Filed ${months} month(s) after due date (${due.toLocaleDateString('en-IN')}). 1% × ₹${fmt(shortfall)} × ${months} = ₹${fmt(amount)}.`,
+  }
+}
+
+function compute234B(
+  netTaxLiability: number,
+  tdsTcs: number,
+  totalAdvanceTax: number,
+  ay: AssessmentYear,
+  paymentDate: Date,
+): { amount: number; explanation: string } {
+  const assessedTax = Math.max(0, netTaxLiability - tdsTcs)
+  if (assessedTax <= 10000) {
+    return { amount: 0, explanation: 'Assessed tax ≤ ₹10,000 — 234B not applicable.' }
+  }
+  const advancePaid = Math.max(0, totalAdvanceTax)
+  const ninetyPct = 0.9 * assessedTax
+  if (advancePaid >= ninetyPct) {
+    return {
+      amount: 0,
+      explanation: `Advance tax of ₹${fmt(advancePaid)} ≥ 90% of assessed tax (₹${fmt(ninetyPct)}) — no 234B.`,
+    }
+  }
+  const shortfall = assessedTax - advancePaid
+  const aprilFirst = new Date(ayStartYear(ay), 3, 1) // 1 April of AY
+  const months = monthsCeil(aprilFirst, paymentDate)
+  const amount = round(shortfall * INTEREST_RATE_PER_MONTH * months)
+  return {
+    amount,
+    explanation: `Advance tax shortfall ₹${fmt(shortfall)} × 1% × ${months} month(s) (1 Apr → ${paymentDate.toLocaleDateString('en-IN')}) = ₹${fmt(amount)}.`,
+  }
+}
+
+function compute234C(
+  netTaxLiability: number,
+  tdsTcs: number,
+  breakdown: InterestInputs['advanceTaxBreakdown'],
+): { amount: number; explanation: string } {
+  const assessedTax = Math.max(0, netTaxLiability - tdsTcs)
+  if (assessedTax <= 0) {
+    return { amount: 0, explanation: 'No assessed tax — no 234C.' }
+  }
+  const installments: { name: string; cumPaid: number; cumDue: number; safe: number; months: number }[] = [
+    { name: 'Q1 (by 15 Jun)', cumPaid: breakdown.q1ByJun15, cumDue: assessedTax * 0.15, safe: assessedTax * 0.12, months: 3 },
+    {
+      name: 'Q2 (by 15 Sep)',
+      cumPaid: breakdown.q1ByJun15 + breakdown.q2BySep15,
+      cumDue: assessedTax * 0.45,
+      safe: assessedTax * 0.36,
+      months: 3,
+    },
+    {
+      name: 'Q3 (by 15 Dec)',
+      cumPaid: breakdown.q1ByJun15 + breakdown.q2BySep15 + breakdown.q3ByDec15,
+      cumDue: assessedTax * 0.75,
+      safe: assessedTax * 0.75,
+      months: 3,
+    },
+    {
+      name: 'Q4 (by 15 Mar)',
+      cumPaid:
+        breakdown.q1ByJun15 + breakdown.q2BySep15 + breakdown.q3ByDec15 + breakdown.q4ByMar15,
+      cumDue: assessedTax,
+      safe: assessedTax,
+      months: 1,
+    },
+  ]
+
+  let total = 0
+  const lines: string[] = []
+  for (const inst of installments) {
+    if (inst.cumPaid >= inst.safe) continue
+    const shortfall = inst.cumDue - inst.cumPaid
+    const interest = round(shortfall * INTEREST_RATE_PER_MONTH * inst.months)
+    total += interest
+    lines.push(`${inst.name}: shortfall ₹${fmt(shortfall)} × 1% × ${inst.months}m = ₹${fmt(interest)}`)
+  }
+
+  if (total === 0) {
+    return { amount: 0, explanation: 'All quarterly safe-harbour thresholds met — no 234C.' }
+  }
+  return { amount: round(total), explanation: lines.join(' · ') }
 }
 
 // ────────────────────────────────────────────────────────────────────
@@ -574,6 +828,12 @@ export function emptyInputs(ay: AssessmentYear = '2026-27'): CalcInputs {
     income: { salary: 0, houseProperty: 0, business: 0, capitalGains: 0, otherSources: 0 },
     deductions: { s80C: 0, s80CCD1B: 0, s80D: 0, s80G: 0, s80TTA: 0, s80TTB: 0 },
     taxesPaid: { tds: 0, advanceTax: 0, selfAssessmentTax: 0 },
+    interest: {
+      enabled: false,
+      dateOfFiling: null,
+      hasTaxAudit: false,
+      advanceTaxBreakdown: { q1ByJun15: 0, q2BySep15: 0, q3ByDec15: 0, q4ByMar15: 0 },
+    },
   }
 }
 

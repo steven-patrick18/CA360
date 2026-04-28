@@ -84,6 +84,12 @@ export default function ComputationFormPage() {
           income: c.inputs.income,
           deductions: c.inputs.deductions,
           taxesPaid: c.inputs.taxesPaid,
+          interest: c.inputs.interest ?? {
+            enabled: false,
+            dateOfFiling: null,
+            hasTaxAudit: false,
+            advanceTaxBreakdown: { q1ByJun15: 0, q2BySep15: 0, q3ByDec15: 0, q4ByMar15: 0 },
+          },
         })
         setRemarks(c.remarks ?? '')
       })
@@ -137,6 +143,42 @@ export default function ComputationFormPage() {
   }
   function setPaid<K extends keyof CalcInputs['taxesPaid']>(k: K, v: number) {
     setInputs((s) => ({ ...s, taxesPaid: { ...s.taxesPaid, [k]: v } }))
+  }
+
+  function setInterest<K extends keyof NonNullable<CalcInputs['interest']>>(
+    k: K,
+    v: NonNullable<CalcInputs['interest']>[K],
+  ) {
+    setInputs((s) => ({
+      ...s,
+      interest: {
+        ...(s.interest ?? {
+          enabled: false,
+          dateOfFiling: null,
+          hasTaxAudit: false,
+          advanceTaxBreakdown: { q1ByJun15: 0, q2BySep15: 0, q3ByDec15: 0, q4ByMar15: 0 },
+        }),
+        [k]: v,
+      },
+    }))
+  }
+
+  function setAdvanceQuarter(
+    k: keyof NonNullable<CalcInputs['interest']>['advanceTaxBreakdown'],
+    v: number,
+  ) {
+    setInputs((s) => {
+      const i = s.interest ?? {
+        enabled: false,
+        dateOfFiling: null,
+        hasTaxAudit: false,
+        advanceTaxBreakdown: { q1ByJun15: 0, q2BySep15: 0, q3ByDec15: 0, q4ByMar15: 0 },
+      }
+      return {
+        ...s,
+        interest: { ...i, advanceTaxBreakdown: { ...i.advanceTaxBreakdown, [k]: v } },
+      }
+    })
   }
 
   async function handleSave() {
@@ -480,9 +522,10 @@ export default function ComputationFormPage() {
           <Card title="Taxes Already Paid">
             <Money label="TDS" value={inputs.taxesPaid.tds} onChange={(v) => setPaid('tds', v)} />
             <Money
-              label="Advance Tax"
+              label="Advance Tax (total)"
               value={inputs.taxesPaid.advanceTax}
               onChange={(v) => setPaid('advanceTax', v)}
+              hint="If using interest u/s 234C, also enter the quarterly split below."
             />
             <Money
               label="Self-Assessment Tax"
@@ -490,6 +533,93 @@ export default function ComputationFormPage() {
               onChange={(v) => setPaid('selfAssessmentTax', v)}
             />
           </Card>
+
+          {/* Interest u/s 234A/B/C — opt-in card */}
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <label className="flex cursor-pointer items-start gap-2">
+              <input
+                type="checkbox"
+                checked={inputs.interest?.enabled ?? false}
+                onChange={(e) => setInterest('enabled', e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div>
+                <div className="text-base font-medium text-slate-900">
+                  Compute Interest u/s 234A / 234B / 234C
+                </div>
+                <div className="text-xs text-slate-500">
+                  234A late-filing · 234B advance-tax default · 234C deferment of installments.
+                  Each at 1% per month.
+                </div>
+              </div>
+            </label>
+
+            {inputs.interest?.enabled && (
+              <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="block">
+                    <div className="mb-1 text-xs font-medium text-slate-700">Date of filing</div>
+                    <input
+                      type="date"
+                      value={inputs.interest.dateOfFiling ?? ''}
+                      onChange={(e) => setInterest('dateOfFiling', e.target.value || null)}
+                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <div className="mt-1 text-[11px] text-slate-500">
+                      Defaults to today if blank. Used for both 234A (vs due date) and 234B (vs 1 April).
+                    </div>
+                  </label>
+                  <label className="flex cursor-pointer items-end gap-2 pb-2">
+                    <input
+                      type="checkbox"
+                      checked={inputs.interest.hasTaxAudit}
+                      onChange={(e) => setInterest('hasTaxAudit', e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="text-xs text-slate-700">
+                      Tax audit applicable u/s 44AB
+                      <div className="text-[11px] text-slate-500">
+                        Pushes the due date for 234A from 31 Jul → 31 Oct of AY.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                <div>
+                  <div className="mb-2 text-xs font-medium text-slate-700">
+                    Quarterly Advance Tax breakdown (for 234C)
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                    <Money
+                      label="By 15 Jun (Q1)"
+                      value={inputs.interest.advanceTaxBreakdown.q1ByJun15}
+                      onChange={(v) => setAdvanceQuarter('q1ByJun15', v)}
+                    />
+                    <Money
+                      label="By 15 Sep (Q2)"
+                      value={inputs.interest.advanceTaxBreakdown.q2BySep15}
+                      onChange={(v) => setAdvanceQuarter('q2BySep15', v)}
+                    />
+                    <Money
+                      label="By 15 Dec (Q3)"
+                      value={inputs.interest.advanceTaxBreakdown.q3ByDec15}
+                      onChange={(v) => setAdvanceQuarter('q3ByDec15', v)}
+                    />
+                    <Money
+                      label="By 15 Mar (Q4)"
+                      value={inputs.interest.advanceTaxBreakdown.q4ByMar15}
+                      onChange={(v) => setAdvanceQuarter('q4ByMar15', v)}
+                    />
+                  </div>
+                  <div className="mt-2 text-[11px] text-slate-500">
+                    Sum of these should match the total Advance Tax above. Leave at 0 if you don't
+                    have a quarterly breakdown — calculator will assume worst case (paid only by
+                    15 Mar) for 234C.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           <Card title="Remarks">
             <textarea
@@ -529,10 +659,43 @@ export default function ComputationFormPage() {
                   <Row label="Less: Rebate u/s 87A" value={result.rebate87A} />
                 )}
                 <Row label="Net tax liability" value={result.netTaxLiability} bold rule />
+                {result.interest.s234A > 0 && (
+                  <Row label="Add: Interest u/s 234A" value={result.interest.s234A} />
+                )}
+                {result.interest.s234B > 0 && (
+                  <Row label="Add: Interest u/s 234B" value={result.interest.s234B} />
+                )}
+                {result.interest.s234C > 0 && (
+                  <Row label="Add: Interest u/s 234C" value={result.interest.s234C} />
+                )}
+                {result.totalInterest > 0 && (
+                  <Row
+                    label="Total liability with interest"
+                    value={result.totalLiabilityWithInterest}
+                    bold
+                    rule
+                  />
+                )}
                 {result.totalTaxesPaid > 0 && (
                   <Row label="Less: Taxes paid" value={result.totalTaxesPaid} />
                 )}
               </div>
+
+              {/* Interest explanation lines — only when computed */}
+              {inputs.interest?.enabled && result.interest.explanations.length > 0 && (
+                <div className="mt-3 rounded-md border border-indigo-100 bg-indigo-50/50 p-2 text-[10.5px] text-indigo-900">
+                  <div className="mb-1 font-semibold uppercase tracking-wide text-[10px] text-indigo-700">
+                    Interest workings
+                  </div>
+                  <ul className="space-y-0.5">
+                    {result.interest.explanations.map((e, i) => (
+                      <li key={i}>
+                        <span className="font-mono">{e.section}:</span> {e.text}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="mt-4 rounded-md border-2 border-slate-900 px-3 py-2 text-center">
                 <div className="text-[10px] uppercase tracking-wide text-slate-500">
