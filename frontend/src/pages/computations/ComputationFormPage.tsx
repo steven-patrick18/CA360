@@ -16,6 +16,7 @@ import {
   type TaxRegime,
 } from '../../lib/tax-calculator'
 import Spinner from '../../components/Spinner'
+import ClientCombobox from '../../components/ClientCombobox'
 import { useToast, getApiErrorMessage } from '../../lib/toast'
 
 /**
@@ -43,23 +44,36 @@ export default function ComputationFormPage() {
   const [planOpen, setPlanOpen] = useState(false)
   const [targetTax, setTargetTax] = useState<number>(10000)
 
-  // Load clients on mount.
-  // NOTE: deps are intentionally empty. `toast` from useToast() is rebuilt on
-  // every ToastProvider render, so including it would re-fire this effect each
-  // time toast.error() runs — turning any persistent API failure into an
-  // infinite request loop.
+  // Load all clients on mount, paging through 200 at a time (the backend
+  // caps a single request at 200). Firms with >200 clients still get the
+  // complete list for the combobox.
+  // NOTE: deps are intentionally empty — `toast` is unstable across
+  // renders and would otherwise re-fire this effect on every error.
   useEffect(() => {
     let cancelled = false
     setLoadingMeta(true)
-    clientsApi
-      .list({ limit: 200 })
-      .then((res) => {
-        if (!cancelled) setClients(res.items)
-      })
+
+    async function loadAll() {
+      const all: ClientListItem[] = []
+      const PAGE = 200
+      let offset = 0
+      // Safety cap so a runaway server can't loop forever.
+      while (offset < 5000) {
+        const res = await clientsApi.list({ limit: PAGE, offset })
+        if (cancelled) return
+        all.push(...res.items)
+        if (all.length >= res.total || res.items.length === 0) break
+        offset += PAGE
+      }
+      if (!cancelled) setClients(all)
+    }
+
+    loadAll()
       .catch((e) => toast.error(getApiErrorMessage(e)))
       .finally(() => {
         if (!cancelled) setLoadingMeta(false)
       })
+
     return () => {
       cancelled = true
     }
@@ -418,17 +432,21 @@ export default function ComputationFormPage() {
           {/* Parameters */}
           <Card title="Parameters">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <Select
-                label="Client"
-                value={clientId}
-                onChange={setClientId}
-                options={clients.map((c) => ({
-                  value: c.id,
-                  label: `#${c.srNo} ${c.name}${c.pan ? ` (${c.pan})` : ''}`,
-                }))}
-                placeholder="Select a client"
-                required
-              />
+              <label className="block">
+                <div className="mb-1 text-xs font-medium text-slate-700">
+                  Client <span className="text-red-500">*</span>
+                </div>
+                <ClientCombobox
+                  value={clientId}
+                  onChange={setClientId}
+                  clients={clients}
+                  placeholder="Search by name, PAN, or Sr No…"
+                  required
+                />
+                <div className="mt-1 text-[11px] text-slate-500">
+                  {clients.length} client{clients.length === 1 ? '' : 's'} loaded · type to filter
+                </div>
+              </label>
               <Select
                 label="Assessment Year"
                 value={inputs.assessmentYear}
