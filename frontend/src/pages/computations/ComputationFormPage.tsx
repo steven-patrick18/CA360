@@ -9,6 +9,7 @@ import {
   SUPPORTED_AYS,
   compute,
   emptyInputs,
+  reverseSolve,
   type AgeCategory,
   type AssessmentYear,
   type CalcInputs,
@@ -37,6 +38,10 @@ export default function ComputationFormPage() {
   const [clientId, setClientId] = useState('')
   const [inputs, setInputs] = useState<CalcInputs>(emptyInputs())
   const [remarks, setRemarks] = useState('')
+
+  // Reverse-solve "plan from target tax" panel state
+  const [planOpen, setPlanOpen] = useState(false)
+  const [targetTax, setTargetTax] = useState<number>(10000)
 
   // Load clients (and existing computation if editing)
   useEffect(() => {
@@ -86,6 +91,35 @@ export default function ComputationFormPage() {
 
   // Live calculation
   const result = useMemo(() => compute(inputs), [inputs])
+
+  // Reverse solve uses the form's current AY / regime / age — so the user
+  // can change those dropdowns first and then plan from the target tax.
+  const plan = useMemo(
+    () => reverseSolve(targetTax, inputs.assessmentYear, inputs.regime, inputs.ageCategory),
+    [targetTax, inputs.assessmentYear, inputs.regime, inputs.ageCategory],
+  )
+
+  function applyPlan(withDeductions: boolean) {
+    setInputs((s) => ({
+      ...s,
+      income: {
+        salary: withDeductions ? plan.requiredGrossIncome : plan.taxableIncome,
+        houseProperty: 0,
+        business: 0,
+        capitalGains: 0,
+        otherSources: 0,
+      },
+      deductions: withDeductions
+        ? plan.suggestedDeductions
+        : { s80C: 0, s80CCD1B: 0, s80D: 0, s80G: 0, s80TTA: 0, s80TTB: 0 },
+    }))
+    setPlanOpen(false)
+    toast.success(
+      withDeductions
+        ? 'Applied with suggested deductions — tweak income split / deductions as needed.'
+        : 'Applied income only — tweak across heads as needed.',
+    )
+  }
 
   function setIncome<K extends keyof CalcInputs['income']>(k: K, v: number) {
     setInputs((s) => ({ ...s, income: { ...s.income, [k]: v } }))
@@ -186,6 +220,135 @@ export default function ComputationFormPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Reverse-solve "Plan from Target Tax" — collapsible card sitting above the form */}
+      <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setPlanOpen((o) => !o)}
+          className="flex w-full items-center justify-between gap-2 text-left"
+        >
+          <div>
+            <div className="text-sm font-semibold text-indigo-900">
+              Plan from Target Tax
+              <span className="ml-2 text-[11px] font-normal text-indigo-700">
+                (reverse-solve — enter desired tax, get the income figures)
+              </span>
+            </div>
+            <div className="mt-0.5 text-xs text-indigo-700">
+              Use this when a client says "I want to pay ₹X tax" and you need to work backwards.
+            </div>
+          </div>
+          <span className="text-xl text-indigo-700">{planOpen ? '−' : '+'}</span>
+        </button>
+
+        {planOpen && (
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Input side */}
+            <div className="space-y-3">
+              <label className="block">
+                <div className="mb-1 text-xs font-medium text-slate-700">
+                  Target Tax Payable (₹)
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  value={targetTax === 0 ? '' : targetTax}
+                  onChange={(e) => setTargetTax(Number(e.target.value) || 0)}
+                  placeholder="e.g. 10000"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-mono tabular-nums focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <div className="mt-1 text-[11px] text-slate-500">
+                  Final tax to govt., post-cess. AY / regime / age use the form's
+                  current selections — change those dropdowns first if needed.
+                </div>
+              </label>
+
+              <div className="rounded-md bg-white p-3 text-xs ring-1 ring-slate-200">
+                <Row label="Required Total Income" value={plan.taxableIncome} bold />
+                {plan.suggestedDeductions && inputs.regime === 'OLD' && (
+                  <>
+                    <div className="mt-2 border-t border-slate-200 pt-2 text-[10px] uppercase tracking-wide text-slate-500">
+                      Suggested deductions (Old regime baseline)
+                    </div>
+                    {plan.suggestedDeductions.s80C > 0 && (
+                      <Row label="80C" value={plan.suggestedDeductions.s80C} />
+                    )}
+                    {plan.suggestedDeductions.s80CCD1B > 0 && (
+                      <Row label="80CCD(1B)" value={plan.suggestedDeductions.s80CCD1B} />
+                    )}
+                    {plan.suggestedDeductions.s80D > 0 && (
+                      <Row label="80D" value={plan.suggestedDeductions.s80D} />
+                    )}
+                    {plan.suggestedDeductions.s80TTA > 0 && (
+                      <Row label="80TTA" value={plan.suggestedDeductions.s80TTA} />
+                    )}
+                    {plan.suggestedDeductions.s80TTB > 0 && (
+                      <Row label="80TTB" value={plan.suggestedDeductions.s80TTB} />
+                    )}
+                  </>
+                )}
+                <Row
+                  label={inputs.regime === 'OLD' ? 'Required Gross Total Income' : 'Required Gross Total Income'}
+                  value={plan.requiredGrossIncome}
+                  bold
+                  rule
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyPlan(false)}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
+                >
+                  Apply income only
+                </button>
+                {inputs.regime === 'OLD' && (
+                  <button
+                    type="button"
+                    onClick={() => applyPlan(true)}
+                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                  >
+                    Apply with suggested deductions
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Slab + notes */}
+            <div className="space-y-3">
+              {plan.slabBreakdown.length > 0 && (
+                <div className="rounded-md bg-white p-3 text-xs ring-1 ring-slate-200">
+                  <div className="mb-1 text-[10px] uppercase tracking-wide text-slate-500">
+                    Slab-wise tax (target ₹{targetTax.toLocaleString('en-IN')})
+                  </div>
+                  <ul className="space-y-1 text-slate-700">
+                    {plan.slabBreakdown.map((s, i) => (
+                      <li key={i} className="flex items-baseline justify-between gap-2">
+                        <span className="truncate">{s.label}</span>
+                        <span className="shrink-0 font-mono tabular-nums">
+                          {fmtINR(s.taxOnBracket)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {plan.notes.length > 0 && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900">
+                  <strong>Notes</strong>
+                  <ul className="mt-1 list-disc pl-5 space-y-0.5">
+                    {plan.notes.map((n, i) => (
+                      <li key={i}>{n}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">

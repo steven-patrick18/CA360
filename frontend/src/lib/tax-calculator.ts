@@ -370,6 +370,173 @@ function anyDeductionEntered(d: DeductionInputs): boolean {
 }
 
 // ────────────────────────────────────────────────────────────────────
+// Reverse-solve: given a target tax payable, what does the underlying
+// taxable income need to be? Useful for advance-tax planning and "client
+// wants to pay ₹X — work the numbers backwards" scenarios.
+//
+// Simplifications (v1):
+//   - Surcharge ignored (only matters above ₹50L total income — we flag
+//     in notes if the solved TI looks like it would attract surcharge).
+//   - Marginal-relief edge cases just above the ₹7L / ₹5L rebate
+//     thresholds are not finely tuned — solved TI is bumped to just
+//     above the threshold and the user can verify in forward mode.
+//   - Cess @ 4% is stripped: target tax is assumed to be the all-in
+//     headline number (post-cess, pre-credit-of-taxes-paid).
+// ────────────────────────────────────────────────────────────────────
+
+export interface ReverseSolveResult {
+  /** Total income that would yield (approximately) the target tax. */
+  taxableIncome: number
+  /** Slab-by-slab breakdown of how the target tax is reached. */
+  slabBreakdown: SlabApplied[]
+  /** Suggested deduction allocation (Old regime only) — caps maxed. */
+  suggestedDeductions: DeductionInputs
+  /** Required Gross Total Income if the suggested deductions are applied. */
+  requiredGrossIncome: number
+  notes: string[]
+}
+
+const SURCHARGE_THRESHOLD = 5000000
+
+export function reverseSolve(
+  targetTax: number,
+  ay: AssessmentYear,
+  regime: TaxRegime,
+  age: AgeCategory,
+): ReverseSolveResult {
+  const notes: string[] = []
+  const rebateThreshold = regime === 'NEW' ? 700000 : 500000
+
+  // Suggested Chapter VI-A allocation (only meaningful under Old regime).
+  const suggested: DeductionInputs =
+    regime === 'OLD'
+      ? {
+          s80C: 150000,
+          s80CCD1B: 50000,
+          s80D: age === 'BELOW_60' ? 25000 : 50000,
+          s80G: 0,
+          s80TTA: age === 'BELOW_60' ? 10000 : 0,
+          s80TTB: age !== 'BELOW_60' ? 50000 : 0,
+          // The 80G slot stays at 0 — donations are entirely a planning lever, not
+          // a default to pre-fill; the rest are "use-it-or-lose-it" caps that
+          // most planning tools max out as a baseline.
+        }
+      : { s80C: 0, s80CCD1B: 0, s80D: 0, s80G: 0, s80TTA: 0, s80TTB: 0 }
+
+  const suggestedTotal =
+    suggested.s80C +
+    suggested.s80CCD1B +
+    suggested.s80D +
+    suggested.s80G +
+    suggested.s80TTA +
+    suggested.s80TTB
+
+  // Zero target → just stay below the rebate threshold (87A wipes the tax).
+  if (targetTax <= 0) {
+    notes.push(
+      `To pay ₹0 in tax, total income must stay at or below ₹${fmt(rebateThreshold)} so Rebate u/s 87A wipes the tax.`,
+    )
+    return {
+      taxableIncome: rebateThreshold,
+      slabBreakdown: [],
+      suggestedDeductions: suggested,
+      requiredGrossIncome: rebateThreshold + suggestedTotal,
+      notes,
+    }
+  }
+
+  // Strip cess: tax-on-income = target / 1.04
+  const taxOnIncome = targetTax / 1.04
+
+  // Walk slabs forward, accumulating tax until we hit the target.
+  const slabSet = slabsFor(ay, regime, age)
+  let income = 0
+  let taxAcc = 0
+  let prev = 0
+  const breakdown: SlabApplied[] = []
+
+  for (const slab of slabSet.slabs) {
+    const upper = slab.upto ?? Number.POSITIVE_INFINITY
+    const sliceMax = upper - prev
+
+    if (slab.rate === 0) {
+      // Free band: count it in income but don't accumulate tax.
+      const slice = sliceMax === Number.POSITIVE_INFINITY ? 0 : sliceMax
+      income += slice
+      breakdown.push({
+        label: `Nil up to ₹${fmt(income)} (basic exemption)`,
+        taxableInBracket: slice,
+        rate: 0,
+        taxOnBracket: 0,
+      })
+      prev = upper
+      continue
+    }
+
+    const taxRemaining = taxOnIncome - taxAcc
+    if (taxRemaining <= 0) break
+
+    const sliceForRemaining = taxRemaining / slab.rate
+    if (sliceForRemaining <= sliceMax) {
+      // We can finish inside this bracket.
+      income += sliceForRemaining
+      taxAcc += sliceForRemaining * slab.rate
+      breakdown.push({
+        label: `${(slab.rate * 100).toFixed(0)}% on ₹${fmt(sliceForRemaining)} (₹${fmt(prev + 1)} to ₹${fmt(income)})`,
+        taxableInBracket: sliceForRemaining,
+        rate: slab.rate,
+        taxOnBracket: sliceForRemaining * slab.rate,
+      })
+      break
+    } else {
+      // Take the whole bracket and continue into the next one.
+      income += sliceMax
+      taxAcc += sliceMax * slab.rate
+      breakdown.push({
+        label: `${(slab.rate * 100).toFixed(0)}% on ₹${fmt(sliceMax)} (₹${fmt(prev + 1)} to ₹${fmt(upper)})`,
+        taxableInBracket: sliceMax,
+        rate: slab.rate,
+        taxOnBracket: sliceMax * slab.rate,
+      })
+      prev = upper
+    }
+  }
+
+  // Rebate 87A check: if solved TI fell at or below the threshold, the actual
+  // tax would be wiped by the rebate. Bump TI to just above the threshold so
+  // the user gets a workable starting point.
+  if (income <= rebateThreshold) {
+    notes.push(
+      `To pay any positive tax, taxable income must exceed ₹${fmt(rebateThreshold)} (Rebate u/s 87A would otherwise wipe the tax). Suggested income bumped above the threshold — verify in forward mode.`,
+    )
+    income = rebateThreshold + 100
+  }
+
+  // Surcharge warning if we're up at high incomes where surcharge bites.
+  if (income > SURCHARGE_THRESHOLD) {
+    notes.push(
+      `Solved total income exceeds ₹${fmt(SURCHARGE_THRESHOLD)} — surcharge applies in reality but is not factored here. Run forward mode to verify the headline tax.`,
+    )
+  }
+
+  if (regime === 'OLD') {
+    notes.push(
+      'Suggested deductions assume baseline Chapter VI-A allocation (80C ₹1.5L, 80CCD(1B) ₹50K, 80D age-appropriate, 80TTA/TTB age-appropriate). Adjust to your client\'s actual investments.',
+    )
+  } else {
+    notes.push('Chapter VI-A deductions are not available under the New Regime.')
+  }
+
+  return {
+    taxableIncome: round(income),
+    slabBreakdown: breakdown,
+    suggestedDeductions: suggested,
+    requiredGrossIncome: round(income) + suggestedTotal,
+    notes,
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────
 // Defaults — used to seed empty form state.
 // ────────────────────────────────────────────────────────────────────
 
