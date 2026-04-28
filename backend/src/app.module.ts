@@ -9,6 +9,8 @@ import { EncryptionModule } from './encryption/encryption.module';
 import { AuditModule } from './audit/audit.module';
 import { ClientsModule } from './clients/clients.module';
 import { CredentialsModule } from './credentials/credentials.module';
+import { FilingsModule } from './filings/filings.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { MetaModule } from './meta/meta.module';
 
 @Module({
@@ -36,6 +38,8 @@ import { MetaModule } from './meta/meta.module';
     AuthModule,
     ClientsModule,
     CredentialsModule,
+    FilingsModule,
+    DashboardModule,
     MetaModule,
   ],
   controllers: [AppController],

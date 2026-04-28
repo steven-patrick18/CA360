@@ -55,6 +55,26 @@ enum Portal {
   MCA
 }
 
+enum FilingStatus {
+  PENDING
+  DOCS_AWAITED
+  IN_PROCESS
+  READY
+  FILED
+  ACKNOWLEDGED
+  DEFECTIVE
+}
+
+enum ItrForm {
+  ITR1
+  ITR2
+  ITR3
+  ITR4
+  ITR5
+  ITR6
+  ITR7
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Models
 // ─────────────────────────────────────────────────────────────────────────
@@ -73,6 +93,7 @@ model CaFirm {
   users       User[]
   clients     Client[]
   credentials ClientCredential[]
+  filings     ItrFiling[]
   auditLogs   AuditLog[]
 
   @@map("ca_firm")
@@ -120,6 +141,8 @@ model User {
   branchesHeaded        Branch[]           @relation("BranchHead")
   assignedClients       Client[]           @relation("ClientAssignment")
   credentialReveals     ClientCredential[] @relation("CredentialRevealer")
+  filingsPrepared       ItrFiling[]        @relation("FilingPreparer")
+  filingsFiled          ItrFiling[]        @relation("FilingFiler")
   auditLogs             AuditLog[]         @relation("UserAuditLog")
 
   @@index([firmId])
@@ -152,6 +175,7 @@ model Client {
   branch      Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
   assignedTo  User?              @relation("ClientAssignment", fields: [assignedUserId], references: [id], onDelete: SetNull)
   credentials ClientCredential[]
+  filings     ItrFiling[]
 
   @@unique([firmId, srNo])
   @@unique([firmId, pan])
@@ -185,6 +209,39 @@ model ClientCredential {
   @@index([firmId])
   @@index([clientId])
   @@map("client_credentials")
+}
+
+model ItrFiling {
+  id                String       @id @default(uuid()) @db.Uuid
+  firmId            String       @map("firm_id") @db.Uuid
+  clientId          String       @map("client_id") @db.Uuid
+  assessmentYear    String       @map("assessment_year") @db.VarChar(7) // "2024-25"
+  itrForm           ItrForm?     @map("itr_form")
+  status            FilingStatus @default(PENDING)
+  dueDate           DateTime?    @map("due_date") @db.Date
+  filedDate         DateTime?    @map("filed_date") @db.Date
+  acknowledgementNo String?      @map("acknowledgement_no")
+  grossIncome       Decimal?     @map("gross_income") @db.Decimal(15, 2)
+  taxPaid           Decimal?     @map("tax_paid") @db.Decimal(15, 2)
+  refundAmount      Decimal?     @map("refund_amount") @db.Decimal(15, 2)
+  preparedById      String?      @map("prepared_by") @db.Uuid
+  filedById         String?      @map("filed_by") @db.Uuid
+  remarks           String?
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  firm       CaFirm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client     Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  preparedBy User?  @relation("FilingPreparer", fields: [preparedById], references: [id], onDelete: SetNull)
+  filedBy    User?  @relation("FilingFiler", fields: [filedById], references: [id], onDelete: SetNull)
+
+  @@unique([clientId, assessmentYear])
+  @@index([firmId])
+  @@index([clientId])
+  @@index([firmId, status])
+  @@index([firmId, assessmentYear])
+  @@index([firmId, dueDate])
+  @@map("itr_filings")
 }
 
 model AuditLog {

@@ -1,19 +1,37 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ClientForm from '../../components/ClientForm'
+import FilingFormModal from '../../components/FilingFormModal'
 import Spinner from '../../components/Spinner'
 import { clientsApi, credentialsApi } from '../../lib/clients-api'
+import { filingsApi } from '../../lib/filings-api'
 import {
+  FILING_STATUS_LABELS,
+  ITR_FORM_LABELS,
   PORTAL_LABELS,
   STATUS_LABELS,
+  fmtDate,
+  fmtINR,
   type ClientCredentialSummary,
   type ClientDetail,
+  type FilingListItem,
+  type FilingStatus,
   type Portal,
   type RevealedCredential,
   type UpdateClientPayload,
 } from '../../lib/api-types'
 import { useAuth } from '../../lib/auth'
 import { useToast, getApiErrorMessage } from '../../lib/toast'
+
+const FILING_STATUS_COLORS: Record<FilingStatus, string> = {
+  PENDING: 'bg-slate-100 text-slate-700 ring-slate-200',
+  DOCS_AWAITED: 'bg-amber-50 text-amber-700 ring-amber-200',
+  IN_PROCESS: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+  READY: 'bg-cyan-50 text-cyan-700 ring-cyan-200',
+  FILED: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  ACKNOWLEDGED: 'bg-emerald-100 text-emerald-800 ring-emerald-300',
+  DEFECTIVE: 'bg-red-50 text-red-700 ring-red-200',
+}
 
 const PORTALS: Portal[] = ['INCOME_TAX', 'GST', 'TRACES', 'MCA']
 const REVEAL_VISIBLE_MS = 30_000
@@ -233,19 +251,36 @@ export default function ClientDetailPage() {
   const toast = useToast()
   const { user } = useAuth()
   const [client, setClient] = useState<ClientDetail | null>(null)
+  const [filings, setFilings] = useState<FilingListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [savingForm, setSavingForm] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const [filingModal, setFilingModal] = useState<{ open: boolean; filing?: FilingListItem }>({
+    open: false,
+  })
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await clientsApi.detail(id)
-      setClient(data)
+      const [c, fs] = await Promise.all([
+        clientsApi.detail(id),
+        filingsApi.list({ clientId: id, limit: 50 }),
+      ])
+      setClient(c)
+      setFilings(fs.items)
     } catch (err) {
       toast.error(getApiErrorMessage(err))
     } finally {
       setLoading(false)
+    }
+  }, [id, toast])
+
+  const reloadFilings = useCallback(async () => {
+    try {
+      const fs = await filingsApi.list({ clientId: id, limit: 50 })
+      setFilings(fs.items)
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
     }
   }, [id, toast])
 
@@ -388,6 +423,84 @@ export default function ClientDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ITR Filings section */}
+      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-medium text-slate-900">ITR Filings</h2>
+            <p className="text-xs text-slate-500">
+              Multi-year tracking for {client.name}
+            </p>
+          </div>
+          <button
+            onClick={() => setFilingModal({ open: true })}
+            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            + Add filing
+          </button>
+        </div>
+
+        {filings.length === 0 ? (
+          <div className="rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
+            No filings yet for this client. Click "Add filing" to start.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs uppercase text-slate-500">
+                <tr>
+                  <th className="py-2 text-left font-medium">AY</th>
+                  <th className="py-2 text-left font-medium">Form</th>
+                  <th className="py-2 text-left font-medium">Status</th>
+                  <th className="py-2 text-left font-medium">Due</th>
+                  <th className="py-2 text-left font-medium">Filed</th>
+                  <th className="py-2 text-right font-medium">Refund</th>
+                  <th className="py-2 text-right font-medium" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filings.map((f) => (
+                  <tr key={f.id} className="hover:bg-slate-50">
+                    <td className="py-2 font-mono text-xs">{f.assessmentYear}</td>
+                    <td className="py-2 text-xs text-slate-600">
+                      {f.itrForm ? ITR_FORM_LABELS[f.itrForm] : '—'}
+                    </td>
+                    <td className="py-2">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${FILING_STATUS_COLORS[f.status]}`}
+                      >
+                        {FILING_STATUS_LABELS[f.status]}
+                      </span>
+                    </td>
+                    <td className="py-2 text-xs text-slate-600">{fmtDate(f.dueDate)}</td>
+                    <td className="py-2 text-xs text-slate-600">{fmtDate(f.filedDate)}</td>
+                    <td className="py-2 text-right font-mono text-xs text-slate-700">
+                      {fmtINR(f.refundAmount)}
+                    </td>
+                    <td className="py-2 text-right">
+                      <button
+                        onClick={() => setFilingModal({ open: true, filing: f })}
+                        className="text-xs text-indigo-600 hover:underline"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <FilingFormModal
+        open={filingModal.open}
+        clientId={filingModal.filing ? undefined : client.id}
+        filing={filingModal.filing}
+        onClose={() => setFilingModal({ open: false })}
+        onSaved={() => void reloadFilings()}
+      />
     </div>
   )
 }

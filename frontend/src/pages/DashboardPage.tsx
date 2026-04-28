@@ -1,24 +1,68 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ROLE_LABELS, useAuth } from '../lib/auth'
+import { dashboardApi } from '../lib/filings-api'
+import { FILING_STATUS_LABELS, type DashboardStats, type FilingStatus } from '../lib/api-types'
+import Spinner from '../components/Spinner'
+import { useToast, getApiErrorMessage } from '../lib/toast'
 
 interface StatCardProps {
   label: string
-  value: string
-  hint: string
+  value: string | number
+  hint?: string
+  to?: string
 }
 
-function StatCard({ label, value, hint }: StatCardProps) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+function StatCard({ label, value, hint, to }: StatCardProps) {
+  const inner = (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
       <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 text-2xl font-semibold text-slate-900">{value}</div>
-      <div className="mt-1 text-xs text-slate-400">{hint}</div>
+      <div className="mt-1 text-3xl font-semibold text-slate-900">{value}</div>
+      {hint && <div className="mt-1 text-xs text-slate-400">{hint}</div>}
     </div>
   )
+  return to ? <Link to={to}>{inner}</Link> : inner
+}
+
+const PIPELINE_ORDER: FilingStatus[] = [
+  'PENDING',
+  'DOCS_AWAITED',
+  'IN_PROCESS',
+  'READY',
+  'FILED',
+  'ACKNOWLEDGED',
+  'DEFECTIVE',
+]
+
+const PIPELINE_COLORS: Record<FilingStatus, string> = {
+  PENDING: 'bg-slate-200',
+  DOCS_AWAITED: 'bg-amber-300',
+  IN_PROCESS: 'bg-indigo-400',
+  READY: 'bg-cyan-400',
+  FILED: 'bg-emerald-500',
+  ACKNOWLEDGED: 'bg-emerald-700',
+  DEFECTIVE: 'bg-red-400',
 }
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const toast = useToast()
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    dashboardApi
+      .stats()
+      .then(setStats)
+      .catch((err) => toast.error(getApiErrorMessage(err)))
+      .finally(() => setLoading(false))
+  }, [toast])
+
   if (!user) return null
+
+  const pipelineTotal = stats
+    ? Object.values(stats.pipeline).reduce((a, b) => a + (b ?? 0), 0)
+    : 0
 
   return (
     <div className="space-y-6">
@@ -33,35 +77,96 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Active Clients" value="—" hint="Coming next batch" />
-        <StatCard label="Pending Filings" value="—" hint="Coming Week 3" />
-        <StatCard label="Filed This Month" value="—" hint="Coming Week 3" />
-        <StatCard label="Documents" value="—" hint="Coming Week 2" />
-      </div>
+      {loading ? (
+        <div className="flex h-32 items-center justify-center">
+          <Spinner size="lg" />
+        </div>
+      ) : stats ? (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Active Clients"
+              value={stats.activeClients}
+              hint={`${stats.totalClients} total`}
+              to="/clients?status=ACTIVE"
+            />
+            <StatCard
+              label="Pending Filings"
+              value={stats.pendingFilings}
+              hint="Pending / Docs Awaited / In Process / Ready"
+              to="/filings?status=PENDING"
+            />
+            <StatCard
+              label="Filed This Month"
+              value={stats.filedThisMonth}
+              hint="Based on filed date"
+            />
+            <StatCard label="Documents" value="—" hint="Coming in next batch" />
+          </div>
+
+          {pipelineTotal > 0 && (
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="text-base font-medium text-slate-900">Filing pipeline</h2>
+              <p className="mt-1 mb-3 text-xs text-slate-500">
+                Distribution of {pipelineTotal} filings across all assessment years
+              </p>
+              <div className="flex h-3 overflow-hidden rounded-full">
+                {PIPELINE_ORDER.map((s) => {
+                  const count = stats.pipeline[s] ?? 0
+                  if (!count) return null
+                  const pct = (count / pipelineTotal) * 100
+                  return (
+                    <div
+                      key={s}
+                      className={PIPELINE_COLORS[s]}
+                      style={{ width: `${pct}%` }}
+                      title={`${FILING_STATUS_LABELS[s]}: ${count}`}
+                    />
+                  )
+                })}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4">
+                {PIPELINE_ORDER.map((s) => {
+                  const count = stats.pipeline[s] ?? 0
+                  if (!count) return null
+                  return (
+                    <div key={s} className="flex items-center gap-2">
+                      <span className={`inline-block h-2 w-2 rounded-full ${PIPELINE_COLORS[s]}`} />
+                      <span className="text-slate-700">{FILING_STATUS_LABELS[s]}</span>
+                      <span className="ml-auto font-mono text-slate-500">{count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      ) : null}
 
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-base font-medium text-slate-900">Phase 1 — Build progress</h2>
         <ul className="mt-3 space-y-2 text-sm text-slate-700">
           <li className="flex items-center gap-2">
-            <span className="text-emerald-600">✓</span> Project scaffold + auth + 2FA + dashboard
-            shell
+            <span className="text-emerald-600">✓</span> Auth, 2FA, dashboard shell, RBAC, RLS
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-emerald-600">✓</span> Client master, encrypted credential vault,
+            audit log
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-emerald-600">✓</span> ITR filings, status pipeline, multi-year
+            tracking
           </li>
           <li className="flex items-center gap-2 text-slate-400">
-            <span>○</span> Client master, encrypted credentials, Excel import
+            <span>○</span> Excel import + reports + export
           </li>
           <li className="flex items-center gap-2 text-slate-400">
-            <span>○</span> ITR filings, multi-year tracking, status pipeline
+            <span>○</span> User / branch management UI
           </li>
           <li className="flex items-center gap-2 text-slate-400">
-            <span>○</span> Reports, search/filter, Excel export
+            <span>○</span> Deployment to Ubuntu VPS
           </li>
         </ul>
-      </div>
-
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-        <strong>This is the Phase 1 shell.</strong> The dashboard widgets above will populate as
-        each module ships in subsequent batches.
       </div>
     </div>
   )
