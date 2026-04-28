@@ -16,13 +16,13 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Branches',
     to: '/branches',
     roles: ['MANAGING_PARTNER', 'PARTNER'],
-    enabled: false,
+    enabled: true,
   },
   {
     label: 'Users',
     to: '/users',
-    roles: ['MANAGING_PARTNER', 'BRANCH_HEAD'],
-    enabled: false,
+    roles: ['MANAGING_PARTNER', 'PARTNER'],
+    enabled: true,
   },
   {
     label: 'Reports',

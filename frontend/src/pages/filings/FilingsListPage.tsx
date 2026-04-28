@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { filingsApi } from '../../lib/filings-api'
+import { exportApi } from '../../lib/admin-api'
 import {
   FILING_STATUS_LABELS,
   ITR_FORM_LABELS,
@@ -100,12 +101,24 @@ export default function FilingsListPage() {
               : `${total} ${total === 1 ? 'filing' : 'filings'}${hasFilters ? ' matching filters' : ''}`}
           </p>
         </div>
-        <button
-          onClick={() => setModal({ open: true })}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          + New filing
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              exportApi
+                .download('/export/filings')
+                .catch((e) => toast.error(getApiErrorMessage(e)))
+            }}
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Export Excel
+          </button>
+          <button
+            onClick={() => setModal({ open: true })}
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            + New filing
+          </button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

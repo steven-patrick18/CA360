@@ -12,6 +12,10 @@ import { CredentialsModule } from './credentials/credentials.module';
 import { FilingsModule } from './filings/filings.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { MetaModule } from './meta/meta.module';
+import { UsersModule } from './users/users.module';
+import { BranchesModule } from './branches/branches.module';
+import { ImportModule } from './import/import.module';
+import { ExportModule } from './export/export.module';
 
 @Module({
   imports: [
@@ -41,6 +45,10 @@ import { MetaModule } from './meta/meta.module';
     FilingsModule,
     DashboardModule,
     MetaModule,
+    UsersModule,
+    BranchesModule,
+    ImportModule,
+    ExportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { clientsApi } from '../../lib/clients-api'
+import { exportApi } from '../../lib/admin-api'
 import {
   CLIENT_TYPE_LABELS,
   STATUS_LABELS,
@@ -104,12 +105,30 @@ export default function ClientsListPage() {
               : `${total} ${total === 1 ? 'client' : 'clients'}${hasFilters ? ' matching filters' : ''}`}
           </p>
         </div>
-        <Link
-          to="/clients/new"
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          + Add client
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              exportApi
+                .download('/export/clients')
+                .catch((e) => toast.error(getApiErrorMessage(e)))
+            }}
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Export Excel
+          </button>
+          <Link
+            to="/clients/import"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Import
+          </Link>
+          <Link
+            to="/clients/new"
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            + Add client
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

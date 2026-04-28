@@ -6,6 +6,9 @@ import ClientsListPage from './pages/clients/ClientsListPage'
 import ClientNewPage from './pages/clients/ClientNewPage'
 import ClientDetailPage from './pages/clients/ClientDetailPage'
 import FilingsListPage from './pages/filings/FilingsListPage'
+import UsersPage from './pages/admin/UsersPage'
+import BranchesPage from './pages/admin/BranchesPage'
+import ImportClientsPage from './pages/admin/ImportClientsPage'
 import Layout from './components/Layout'
 import { useAuth } from './lib/auth'
 
@@ -41,6 +44,9 @@ function App() {
         <Route path="clients/new" element={<ClientNewPage />} />
         <Route path="clients/:id" element={<ClientDetailPage />} />
         <Route path="filings" element={<FilingsListPage />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="branches" element={<BranchesPage />} />
+        <Route path="clients/import" element={<ImportClientsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
