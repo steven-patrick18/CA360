@@ -1,0 +1,98 @@
+// CA360 — Phase 1 schema
+//
+// This schema covers ONLY the tables needed for Week 1 work:
+//   - ca_firm    (the tenant — one row per CA practice)
+//   - branches   (each firm has 1+ branches)
+//   - users      (firm staff, scoped to a branch)
+//
+// Tables for Week 2+ (clients, client_credentials, itr_filings,
+// documents, audit_log, activity_log) will be added incrementally as we
+// build each module, NOT all at once. Schema is laid out with later
+// modules in mind (firm_id everywhere, UUID PKs, generic naming).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  MANAGING_PARTNER
+  PARTNER
+  BRANCH_HEAD
+  SENIOR_ARTICLE
+  ARTICLE
+  ACCOUNTANT
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────────────────────────────────
+
+model CaFirm {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String
+  pan            String?
+  registrationNo String?  @map("registration_no")
+  address        String?
+  plan           String   @default("starter")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  branches Branch[]
+  users    User[]
+
+  @@map("ca_firm")
+}
+
+model Branch {
+  id         String   @id @default(uuid()) @db.Uuid
+  firmId     String   @map("firm_id") @db.Uuid
+  name       String
+  city       String
+  address    String?
+  headUserId String?  @map("head_user_id") @db.Uuid
+  isHq       Boolean  @default(false) @map("is_hq")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  firm  CaFirm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  head  User?  @relation("BranchHead", fields: [headUserId], references: [id], onDelete: SetNull)
+  users User[] @relation("BranchUsers")
+
+  @@unique([firmId, name])
+  @@index([firmId])
+  @@map("branches")
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  firmId       String    @map("firm_id") @db.Uuid
+  branchId     String?   @map("branch_id") @db.Uuid
+  name         String
+  email        String    @unique
+  mobile       String?
+  role         UserRole
+  passwordHash String    @map("password_hash")
+  twoFaSecret  String?   @map("two_fa_secret")
+  twoFaEnabled Boolean   @default(false) @map("two_fa_enabled")
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  firm           CaFirm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  branch         Branch?  @relation("BranchUsers", fields: [branchId], references: [id], onDelete: SetNull)
+  branchesHeaded Branch[] @relation("BranchHead")
+
+  @@index([firmId])
+  @@index([branchId])
+  @@map("users")
+}

@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CA360 — local Postgres via Docker (OPTIONAL)
+#
+# This file is kept as a documented option for running Postgres in a container
+# instead of installing it natively. Phase 1 local dev uses NATIVE Postgres on
+# Windows (installed via winget); production uses managed Postgres on the VPS.
+#
+# To use Docker locally instead:
+#   1. Install Docker Desktop for Windows
+#   2. Stop the native Postgres service (services.msc → "postgresql-x64-15" → Stop)
+#      so port 5432 is free.
+#   3. Run:  docker compose up -d
+#   4. Update DATABASE_URL in /backend/.env to use the credentials below.
+# ─────────────────────────────────────────────────────────────────────────────
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: ca360-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ca360
+      POSTGRES_PASSWORD: ca360_dev
+      POSTGRES_DB: ca360
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

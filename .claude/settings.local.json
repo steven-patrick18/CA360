@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /d/CA360 rev-parse --is-inside-work-tree)",
+      "Bash(git -C /d/CA360 init -b main)",
+      "Bash(git -C /d/CA360 status)",
+      "Bash(npx -y @nestjs/cli@latest new backend --skip-git --package-manager npm --strict)",
+      "Bash(npx -y create-vite@latest frontend -- --template react-ts)",
+      "Bash(npm install *)",
+      "Bash(docker info *)",
+      "PowerShell($ErrorActionPreference = 'Continue'; $docker = Get-Command docker -ErrorAction SilentlyContinue; if \\($docker\\) { Write-Output \"DOCKER_FOUND: $\\($docker.Source\\)\"; & docker --version; & docker info --format '{{.ServerVersion}}' } else { Write-Output \"DOCKER_NOT_FOUND\"; $svc = Get-Service -Name 'com.docker.service' -ErrorAction SilentlyContinue; if \\($svc\\) { Write-Output \"DESKTOP_SERVICE: $\\($svc.Status\\)\" } else { Write-Output \"DESKTOP_SERVICE: not installed\" } })",
+      "Bash(npx -y create-vite@latest frontend --template react-ts)",
+      "Bash(npx prisma *)",
+      "Bash(npm uninstall *)",
+      "Bash(npx tsc *)",
+      "PowerShell(foreach \\($p in 5175,5176,4173,4200,8080,3001\\) { if \\(Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue\\) { Write-Output \"$p in-use\" } else { Write-Output \"$p FREE\"; break } }; Write-Output \"---PG-TEST---\"; $env:PGPASSWORD = 'postgres'; & 'C:\\\\Program Files\\\\PostgreSQL\\\\15\\\\bin\\\\psql.exe' -U postgres -d postgres -h localhost -p 5432 -w -c \"SELECT version\\(\\);\" 2>&1 | Select-Object -First 5)",
+      "PowerShell($env:PGPASSWORD = 'postgres'; & 'C:\\\\Program Files\\\\PostgreSQL\\\\15\\\\bin\\\\psql.exe' -U postgres -d postgres -h localhost -w -c \"CREATE USER ca360 WITH PASSWORD 'ca360_dev_2026';\" -c \"CREATE DATABASE ca360 OWNER ca360;\" -c \"GRANT ALL PRIVILEGES ON DATABASE ca360 TO ca360;\" 2>&1)",
+      "Bash(npm run *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@ca360.local\",\"password\":\"Admin@12345\"}')",
+      "Bash(git add *)"
+    ]
+  }
+}
