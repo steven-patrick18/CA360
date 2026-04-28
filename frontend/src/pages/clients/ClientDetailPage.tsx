@@ -15,6 +15,7 @@ import {
   STATUS_LABELS,
   fmtDate,
   fmtINR,
+  safeDetails,
   type ClientCredentialSummary,
   type ClientDetail,
   type FilingListItem,
@@ -345,7 +346,7 @@ function FilingRow({ filing: f, expandable, isOpen, onToggle, onEdit }: FilingRo
                 </div>
               )}
             </div>
-            <FilingDetailsPanel details={f.details} />
+            <FilingDetailsPanel details={safeDetails(f.details)} />
           </td>
         </tr>
       )}
@@ -615,7 +616,7 @@ export default function ClientDetailPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filings.map((f) => {
-                  const d = f.details
+                  const d = safeDetails(f.details)
                   const expandable = Boolean(
                     d &&
                       (d.income.length > 0 ||

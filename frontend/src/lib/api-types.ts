@@ -125,6 +125,23 @@ export interface ItrDetails {
   other: { label: string; value: string | number }[]
 }
 
+/**
+ * Returns the details only if it matches the current rich schema. Filings
+ * imported with the very first COI parser stored details as `{sections: ...}`
+ * — a different shape that would crash the new renderers if accessed
+ * unguarded. Treat those as "no details" so the user can re-import to refresh.
+ */
+export function safeDetails(
+  d: ItrDetails | { sections?: unknown } | null | undefined,
+): ItrDetails | null {
+  if (!d || typeof d !== 'object') return null
+  const candidate = d as Partial<ItrDetails>
+  if (!Array.isArray(candidate.income)) return null
+  if (!Array.isArray(candidate.deductions)) return null
+  if (!Array.isArray(candidate.taxComputation)) return null
+  return candidate as ItrDetails
+}
+
 export interface FilingListItem {
   id: string
   clientId: string

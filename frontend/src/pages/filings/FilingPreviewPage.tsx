@@ -6,6 +6,7 @@ import {
   ITR_FORM_LABELS,
   fmtDate,
   fmtINR,
+  safeDetails,
   type FilingListItem,
   type IncomeHead,
   type ItrDetails,
@@ -76,7 +77,7 @@ export default function FilingPreviewPage() {
     )
   }
 
-  const d = filing.details
+  const d = safeDetails(filing.details)
   const hasCOI = d && hasAnyDetailsData(d)
 
   return (
