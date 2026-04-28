@@ -50,6 +50,10 @@ export const usersApi = {
     const { data } = await api.post<{ tempPassword: string }>(`/users/${id}/reset-password`)
     return data
   },
+  async remove(id: string): Promise<{ ok: true }> {
+    const { data } = await api.delete<{ ok: true }>(`/users/${id}`)
+    return data
+  },
 }
 
 // ─── Branches ─────────────────────────────────────────────────────────
@@ -84,6 +88,10 @@ export const branchesApi = {
     const { data } = await api.patch<BranchDetail>(`/branches/${id}`, payload)
     return data
   },
+  async remove(id: string): Promise<{ ok: true }> {
+    const { data } = await api.delete<{ ok: true }>(`/branches/${id}`)
+    return data
+  },
 }
 
 // ─── Import / Export ─────────────────────────────────────────────────
@@ -108,6 +116,47 @@ export const importApi = {
     const { data } = await api.post<ImportResult>('/import/clients', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
+    return data
+  },
+}
+
+// ─── Firm settings ─────────────────────────────────────────────────────
+
+export interface FirmSettings {
+  id: string
+  name: string
+  pan: string | null
+  registrationNo: string | null
+  address: string | null
+  plan: string
+  logoDataUrl: string | null
+  createdAt?: string
+}
+
+export const firmsApi = {
+  async me(): Promise<FirmSettings> {
+    const { data } = await api.get<FirmSettings>('/firms/me')
+    return data
+  },
+  async update(payload: {
+    name?: string
+    pan?: string
+    registrationNo?: string
+    address?: string
+  }): Promise<FirmSettings> {
+    const { data } = await api.patch<FirmSettings>('/firms/me', payload)
+    return data
+  },
+  async uploadLogo(file: File): Promise<{ logoDataUrl: string }> {
+    const fd = new FormData()
+    fd.append('file', file)
+    const { data } = await api.post<{ logoDataUrl: string }>('/firms/me/logo', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data
+  },
+  async clearLogo(): Promise<{ ok: true }> {
+    const { data } = await api.delete<{ ok: true }>('/firms/me/logo')
     return data
   },
 }

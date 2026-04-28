@@ -35,6 +35,7 @@ export class ProfileService {
       id: user.id,
       firmId: user.firmId,
       firmName: user.firm.name,
+      firmLogoDataUrl: user.firm.logoDataUrl,
       branchId: user.branchId,
       branchName: user.branch?.name ?? null,
       name: user.name,

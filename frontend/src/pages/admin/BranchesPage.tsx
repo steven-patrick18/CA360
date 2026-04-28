@@ -162,6 +162,25 @@ export default function BranchesPage() {
 
   useEffect(reload, [])
 
+  async function handleDelete(b: BranchDetail) {
+    const userCount = b._count?.users ?? 0
+    const clientCount = b._count?.clients ?? 0
+    if (userCount > 0 || clientCount > 0) {
+      toast.error(
+        `Cannot delete: this branch has ${userCount} user(s) and ${clientCount} client(s). Reassign or archive them first.`,
+      )
+      return
+    }
+    if (!window.confirm(`Permanently delete branch "${b.name}"? This cannot be undone.`)) return
+    try {
+      await branchesApi.remove(b.id)
+      toast.success(`Deleted branch ${b.name}`)
+      reload()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -231,6 +250,12 @@ export default function BranchesPage() {
                         className="text-xs text-blue-600 hover:underline"
                       >
                         Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(b)}
+                        className="ml-3 text-xs text-red-600 hover:underline"
+                      >
+                        Delete
                       </button>
                     </td>
                   </tr>

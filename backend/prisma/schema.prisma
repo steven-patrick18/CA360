@@ -86,6 +86,7 @@ model CaFirm {
   registrationNo String?  @map("registration_no")
   address        String?
   plan           String   @default("starter")
+  logoDataUrl    String?  @map("logo_data_url") @db.Text
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

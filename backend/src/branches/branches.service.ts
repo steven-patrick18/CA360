@@ -140,4 +140,47 @@ export class BranchesService {
     });
     return updated;
   }
+
+  /**
+   * Hard-delete a branch. Refuses if the branch has any users or clients
+   * still attached, AND won't let you delete the only HQ. Reassign or
+   * archive the dependent records first.
+   */
+  async remove(id: string) {
+    const firmId = this.firmId();
+    const branch = await this.prisma.branch.findFirst({
+      where: { id, firmId },
+      include: { _count: { select: { users: true, clients: true } } },
+    });
+    if (!branch) throw new NotFoundException('Branch not found');
+
+    if (branch._count.users > 0 || branch._count.clients > 0) {
+      throw new BadRequestException(
+        `Cannot delete: this branch has ${branch._count.users} user(s) and ${branch._count.clients} client(s). Reassign or archive them first.`,
+      );
+    }
+
+    if (branch.isHq) {
+      const otherCount = await this.prisma.branch.count({
+        where: { firmId, id: { not: id } },
+      });
+      if (otherCount === 0) {
+        throw new BadRequestException(
+          'Cannot delete the only branch. Create another branch first.',
+        );
+      }
+      throw new BadRequestException(
+        'Cannot delete an HQ branch. Promote another branch to HQ first.',
+      );
+    }
+
+    await this.prisma.branch.delete({ where: { id } });
+    await this.audit.log({
+      action: 'DELETE',
+      entityType: 'branch',
+      entityId: id,
+      payload: { name: branch.name, city: branch.city },
+    });
+    return { ok: true };
+  }
 }

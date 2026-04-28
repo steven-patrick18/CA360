@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -41,5 +42,11 @@ export class BranchesController {
   @Roles('MANAGING_PARTNER')
   update(@Param('id', new ParseUUIDPipe()) id: string, @Body() dto: UpdateBranchDto) {
     return this.branches.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles('MANAGING_PARTNER')
+  remove(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.branches.remove(id);
   }
 }

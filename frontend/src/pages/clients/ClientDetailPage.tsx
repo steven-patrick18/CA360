@@ -317,6 +317,27 @@ export default function ClientDetailPage() {
     }
   }
 
+  async function handlePermanentDelete() {
+    if (!client) return
+    if (
+      !window.confirm(
+        `PERMANENTLY DELETE ${client.name}?\n\n` +
+          `This wipes the client AND all their filings, encrypted credentials, ` +
+          `and uploaded documents. The audit trail keeps a record of the deletion ` +
+          `but the data itself is gone for good.\n\n` +
+          `Type-confirm: this cannot be undone.`,
+      )
+    )
+      return
+    try {
+      await clientsApi.permanentDelete(id)
+      toast.success('Client permanently deleted')
+      navigate('/clients')
+    } catch (err) {
+      toast.error(getApiErrorMessage(err))
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -335,6 +356,8 @@ export default function ClientDetailPage() {
     client.status !== 'ARCHIVED' &&
     user &&
     ['MANAGING_PARTNER', 'PARTNER', 'BRANCH_HEAD'].includes(user.role)
+
+  const canPermanentDelete = user?.role === 'MANAGING_PARTNER'
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -363,15 +386,26 @@ export default function ClientDetailPage() {
               <p className="mt-1 font-mono text-sm text-slate-500">PAN: {client.pan}</p>
             )}
           </div>
-          {canArchive && (
-            <button
-              onClick={handleArchive}
-              disabled={archiving}
-              className="rounded-md border border-red-200 bg-white px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
-            >
-              Archive
-            </button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {canArchive && (
+              <button
+                onClick={handleArchive}
+                disabled={archiving}
+                className="rounded-md border border-amber-200 bg-white px-3 py-1.5 text-sm text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+              >
+                Archive
+              </button>
+            )}
+            {canPermanentDelete && (
+              <button
+                onClick={handlePermanentDelete}
+                className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
+                title="Wipes the client and all related data. Cannot be undone."
+              >
+                Delete
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
