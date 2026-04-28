@@ -20,9 +20,9 @@
 
 export type TaxRegime = 'OLD' | 'NEW'
 export type AgeCategory = 'BELOW_60' | 'SENIOR_60_TO_79' | 'SUPER_SENIOR_80_PLUS'
-export type AssessmentYear = '2024-25' | '2025-26'
+export type AssessmentYear = '2024-25' | '2025-26' | '2026-27'
 
-export const SUPPORTED_AYS: AssessmentYear[] = ['2024-25', '2025-26']
+export const SUPPORTED_AYS: AssessmentYear[] = ['2024-25', '2025-26', '2026-27']
 
 export interface IncomeInputs {
   /** Gross salary including allowances, before any deduction. */
@@ -133,15 +133,31 @@ function slabsFor(ay: AssessmentYear, regime: TaxRegime, age: AgeCategory): Slab
         ],
       }
     }
-    // AY 2025-26 — revised new-regime slabs (Finance Act 2024)
+    if (ay === '2025-26') {
+      // Revised new-regime slabs (Finance Act 2024)
+      return {
+        exemptionLimit: 300000,
+        slabs: [
+          { upto: 300000, rate: 0 },
+          { upto: 700000, rate: 0.05 },
+          { upto: 1000000, rate: 0.1 },
+          { upto: 1200000, rate: 0.15 },
+          { upto: 1500000, rate: 0.2 },
+          { upto: null, rate: 0.3 },
+        ],
+      }
+    }
+    // AY 2026-27 — Finance Act 2025 widened the slabs and pushed the
+    // exemption to ₹4L. Now seven brackets up to 30%.
     return {
-      exemptionLimit: 300000,
+      exemptionLimit: 400000,
       slabs: [
-        { upto: 300000, rate: 0 },
-        { upto: 700000, rate: 0.05 },
-        { upto: 1000000, rate: 0.1 },
-        { upto: 1200000, rate: 0.15 },
-        { upto: 1500000, rate: 0.2 },
+        { upto: 400000, rate: 0 },
+        { upto: 800000, rate: 0.05 },
+        { upto: 1200000, rate: 0.1 },
+        { upto: 1600000, rate: 0.15 },
+        { upto: 2000000, rate: 0.2 },
+        { upto: 2400000, rate: 0.25 },
         { upto: null, rate: 0.3 },
       ],
     }
@@ -162,21 +178,26 @@ function slabsFor(ay: AssessmentYear, regime: TaxRegime, age: AgeCategory): Slab
 
 /** Standard deduction on salary income. */
 function standardDeduction(ay: AssessmentYear, regime: TaxRegime): number {
-  if (regime === 'NEW' && ay === '2025-26') return 75000
+  // ₹75K under New regime from AY 2025-26 onwards; everything else still ₹50K.
+  if (regime === 'NEW' && (ay === '2025-26' || ay === '2026-27')) return 75000
   return 50000
 }
 
 /** Rebate u/s 87A: full rebate up to a TI threshold, capped at a max amount. */
 function rebate87A(ay: AssessmentYear, regime: TaxRegime, totalIncome: number, taxOnIncome: number): number {
   if (regime === 'NEW') {
-    // Up to ₹7L taxable income → tax fully rebated, max ₹25,000
+    if (ay === '2026-27') {
+      // Finance Act 2025: rebate threshold raised to ₹12L, max ₹60K
+      if (totalIncome <= 1200000) return Math.min(taxOnIncome, 60000)
+      return 0
+    }
+    // AY 2024-25 and 2025-26: ₹7L threshold, max ₹25K
     if (totalIncome <= 700000) return Math.min(taxOnIncome, 25000)
     return 0
   }
-  // OLD regime: up to ₹5L → max ₹12,500
+  // OLD regime: up to ₹5L → max ₹12,500 (unchanged across years)
   if (totalIncome <= 500000) return Math.min(taxOnIncome, 12500)
   return 0
-  void ay // unused but kept in the signature for symmetry with new regime
 }
 
 /** Returns surcharge rate based on TI and regime. New regime caps at 25%. */
@@ -405,7 +426,12 @@ export function reverseSolve(
   age: AgeCategory,
 ): ReverseSolveResult {
   const notes: string[] = []
-  const rebateThreshold = regime === 'NEW' ? 700000 : 500000
+  const rebateThreshold =
+    regime === 'NEW'
+      ? ay === '2026-27'
+        ? 1200000 // Finance Act 2025 raised the New-regime rebate ceiling
+        : 700000
+      : 500000
 
   // Suggested Chapter VI-A allocation (only meaningful under Old regime).
   const suggested: DeductionInputs =
@@ -540,7 +566,7 @@ export function reverseSolve(
 // Defaults — used to seed empty form state.
 // ────────────────────────────────────────────────────────────────────
 
-export function emptyInputs(ay: AssessmentYear = '2025-26'): CalcInputs {
+export function emptyInputs(ay: AssessmentYear = '2026-27'): CalcInputs {
   return {
     assessmentYear: ay,
     regime: 'NEW',
