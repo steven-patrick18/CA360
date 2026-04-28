@@ -51,10 +51,10 @@ export default function TwoFaPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
+    <div className="flex min-h-screen items-center justify-center bg-blue-50 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <h1 className="text-3xl font-semibold text-slate-900">CA360</h1>
+          <h1 className="text-3xl font-bold text-blue-600">CA360</h1>
           <p className="mt-1 text-sm text-slate-500">{state.email}</p>
         </div>
 
@@ -117,7 +117,7 @@ export default function TwoFaPage() {
                 required
                 autoComplete="one-time-code"
                 autoFocus
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-center font-mono text-lg tracking-widest focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-center font-mono text-lg tracking-widest focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="000000"
               />
             </label>
@@ -125,7 +125,7 @@ export default function TwoFaPage() {
             <button
               type="submit"
               disabled={submitting || code.length !== 6}
-              className="w-full rounded-md bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-md bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? 'Verifying…' : isEnrollment ? 'Verify and enable' : 'Verify'}
             </button>

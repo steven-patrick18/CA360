@@ -27,7 +27,7 @@ import { useToast, getApiErrorMessage } from '../../lib/toast'
 const FILING_STATUS_COLORS: Record<FilingStatus, string> = {
   PENDING: 'bg-slate-100 text-slate-700 ring-slate-200',
   DOCS_AWAITED: 'bg-amber-50 text-amber-700 ring-amber-200',
-  IN_PROCESS: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+  IN_PROCESS: 'bg-blue-50 text-blue-700 ring-blue-200',
   READY: 'bg-cyan-50 text-cyan-700 ring-cyan-200',
   FILED: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   ACKNOWLEDGED: 'bg-emerald-100 text-emerald-800 ring-emerald-300',
@@ -162,7 +162,7 @@ function CredentialSlot({ clientId, portal, existing, onChange }: CredentialSlot
             {!existing && (
               <button
                 onClick={() => setEditing(true)}
-                className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700"
+                className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
               >
                 Set up
               </button>
@@ -201,7 +201,7 @@ function CredentialSlot({ clientId, portal, existing, onChange }: CredentialSlot
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Username"
             autoComplete="off"
-            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           <input
             type="password"
@@ -209,7 +209,7 @@ function CredentialSlot({ clientId, portal, existing, onChange }: CredentialSlot
             onChange={(e) => setPassword(e.target.value)}
             placeholder={existing ? 'New password (leave blank to keep)…' : 'Password'}
             autoComplete="new-password"
-            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           <div className="flex justify-end gap-2">
             <button
@@ -226,7 +226,7 @@ function CredentialSlot({ clientId, portal, existing, onChange }: CredentialSlot
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {submitting ? 'Saving…' : 'Save'}
             </button>
@@ -339,7 +339,7 @@ export default function ClientDetailPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div>
-        <Link to="/clients" className="text-sm text-indigo-600 hover:underline">
+        <Link to="/clients" className="text-sm text-blue-600 hover:underline">
           ← Back to clients
         </Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
@@ -436,7 +436,7 @@ export default function ClientDetailPage() {
           </div>
           <button
             onClick={() => setFilingModal({ open: true })}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
           >
             + Add filing
           </button>
@@ -482,7 +482,7 @@ export default function ClientDetailPage() {
                     <td className="py-2 text-right">
                       <button
                         onClick={() => setFilingModal({ open: true, filing: f })}
-                        className="text-xs text-indigo-600 hover:underline"
+                        className="text-xs text-blue-600 hover:underline"
                       >
                         Edit
                       </button>

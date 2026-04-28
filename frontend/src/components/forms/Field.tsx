@@ -25,7 +25,7 @@ function FieldShell({ label, required, error, hint, children }: FieldShellProps)
 }
 
 const baseInput =
-  'w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-50'
+  'w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-50'
 
 interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string

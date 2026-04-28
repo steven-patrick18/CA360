@@ -130,7 +130,7 @@ export default function AuditLogPage() {
           <select
             value={action}
             onChange={(e) => updateParam('action', e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All actions</option>
             {KNOWN_ACTIONS.map((a) => (
@@ -142,7 +142,7 @@ export default function AuditLogPage() {
           <select
             value={entityType}
             onChange={(e) => updateParam('entityType', e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All entities</option>
             {KNOWN_ENTITIES.map((e2) => (
@@ -154,7 +154,7 @@ export default function AuditLogPage() {
           <select
             value={userId}
             onChange={(e) => updateParam('userId', e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All users</option>
             {users.map((u) => (
@@ -167,14 +167,14 @@ export default function AuditLogPage() {
             type="date"
             value={from}
             onChange={(e) => updateParam('from', e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="From"
           />
           <input
             type="date"
             value={to}
             onChange={(e) => updateParam('to', e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="To"
           />
         </div>
@@ -237,7 +237,7 @@ export default function AuditLogPage() {
                         {it.payloadJson && (
                           <button
                             onClick={() => toggle(it.id)}
-                            className="text-xs text-indigo-600 hover:underline"
+                            className="text-xs text-blue-600 hover:underline"
                           >
                             {expanded.has(it.id) ? 'Hide' : 'Details'}
                           </button>

@@ -21,7 +21,7 @@ const PAGE_SIZE = 25
 const STATUS_COLORS: Record<FilingStatus, string> = {
   PENDING: 'bg-slate-100 text-slate-700 ring-slate-200',
   DOCS_AWAITED: 'bg-amber-50 text-amber-700 ring-amber-200',
-  IN_PROCESS: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+  IN_PROCESS: 'bg-blue-50 text-blue-700 ring-blue-200',
   READY: 'bg-cyan-50 text-cyan-700 ring-cyan-200',
   FILED: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   ACKNOWLEDGED: 'bg-emerald-100 text-emerald-800 ring-emerald-300',
@@ -114,7 +114,7 @@ export default function FilingsListPage() {
           </button>
           <button
             onClick={() => setModal({ open: true })}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             + New filing
           </button>
@@ -126,7 +126,7 @@ export default function FilingsListPage() {
           <select
             value={ay}
             onChange={(e) => updateParam('ay', e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All assessment years</option>
             {ays.map((y) => (
@@ -138,7 +138,7 @@ export default function FilingsListPage() {
           <select
             value={status}
             onChange={(e) => updateParam('status', e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All statuses</option>
             {Object.entries(FILING_STATUS_LABELS).map(([v, l]) => (
@@ -150,7 +150,7 @@ export default function FilingsListPage() {
           <select
             value={form}
             onChange={(e) => updateParam('form', e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All ITR forms</option>
             {Object.entries(ITR_FORM_LABELS).map(([v, l]) => (
@@ -162,7 +162,7 @@ export default function FilingsListPage() {
           {hasFilters && (
             <button
               onClick={() => setParams(new URLSearchParams())}
-              className="text-sm text-indigo-600 hover:underline"
+              className="text-sm text-blue-600 hover:underline"
             >
               Clear filters
             </button>
@@ -223,7 +223,7 @@ export default function FilingsListPage() {
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => setModal({ open: true, filing: f })}
-                        className="text-xs text-indigo-600 hover:underline"
+                        className="text-xs text-blue-600 hover:underline"
                       >
                         Edit
                       </button>

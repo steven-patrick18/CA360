@@ -40,10 +40,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-blue-50 px-4">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <h1 className="text-3xl font-semibold text-slate-900">CA360</h1>
+          <h1 className="text-3xl font-bold text-blue-600">CA360</h1>
           <p className="mt-1 text-sm text-slate-500">Practice management for Chartered Accountants</p>
         </div>
         <form
@@ -66,7 +66,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="you@firm.com"
             />
           </label>
@@ -79,7 +79,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="••••••••"
             />
           </label>
@@ -87,7 +87,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-md bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-md bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? 'Signing in…' : 'Continue'}
           </button>

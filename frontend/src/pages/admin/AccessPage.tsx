@@ -497,7 +497,7 @@ export default function AccessPage() {
                       <Link
                         to={`/users?edit=${u.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-xs text-indigo-600 hover:underline"
+                        className="text-xs text-blue-600 hover:underline"
                       >
                         Edit →
                       </Link>
@@ -509,7 +509,7 @@ export default function AccessPage() {
           </table>
         </div>
         <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-right">
-          <Link to="/users" className="text-sm text-indigo-600 hover:underline">
+          <Link to="/users" className="text-sm text-blue-600 hover:underline">
             Go to Users page →
           </Link>
         </div>

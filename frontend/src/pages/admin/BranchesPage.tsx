@@ -132,7 +132,7 @@ function BranchModal({ open, onClose, onSaved, branch, users }: BranchModalProps
             type="submit"
             form="branch-form"
             disabled={submitting}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {submitting ? <Spinner size="sm" /> : isEdit ? 'Save' : 'Create branch'}
           </button>
@@ -174,7 +174,7 @@ export default function BranchesPage() {
         </div>
         <button
           onClick={() => setModal({ open: true })}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           + Add branch
         </button>
@@ -212,7 +212,7 @@ export default function BranchesPage() {
                     <td className="px-4 py-3">
                       <div className="font-medium text-slate-900">{b.name}</div>
                       {b.isHq && (
-                        <span className="inline-flex items-center rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium uppercase text-indigo-700 ring-1 ring-inset ring-indigo-200">
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium uppercase text-blue-700 ring-1 ring-inset ring-blue-200">
                           HQ
                         </span>
                       )}
@@ -228,7 +228,7 @@ export default function BranchesPage() {
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => setModal({ open: true, branch: b })}
-                        className="text-xs text-indigo-600 hover:underline"
+                        className="text-xs text-blue-600 hover:underline"
                       >
                         Edit
                       </button>

@@ -58,7 +58,7 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className="flex w-60 flex-col border-r border-slate-200 bg-white">
         <div className="flex h-14 items-center border-b border-slate-200 px-4">
-          <span className="text-lg font-semibold text-slate-900">CA360</span>
+          <span className="text-lg font-bold text-blue-600">CA360</span>
         </div>
         <nav className="flex-1 space-y-1 px-2 py-3">
           {visible.map((item) =>
@@ -69,7 +69,7 @@ export default function Layout() {
                 className={({ isActive }) =>
                   `block rounded-md px-3 py-2 text-sm font-medium ${
                     isActive
-                      ? 'bg-indigo-50 text-indigo-700'
+                      ? 'bg-blue-50 text-blue-700'
                       : 'text-slate-700 hover:bg-slate-100'
                   }`
                 }

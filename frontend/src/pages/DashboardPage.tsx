@@ -43,7 +43,7 @@ const PIPELINE_ORDER: FilingStatus[] = [
 const PIPELINE_COLORS: Record<FilingStatus, string> = {
   PENDING: 'bg-slate-200',
   DOCS_AWAITED: 'bg-amber-300',
-  IN_PROCESS: 'bg-indigo-400',
+  IN_PROCESS: 'bg-blue-400',
   READY: 'bg-cyan-400',
   FILED: 'bg-emerald-500',
   ACKNOWLEDGED: 'bg-emerald-700',
@@ -136,7 +136,7 @@ export default function DashboardPage() {
                     <Link
                       key={type}
                       to={`/clients?type=${type}`}
-                      className="block rounded-md border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-indigo-300 hover:bg-indigo-50"
+                      className="block rounded-md border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50"
                     >
                       <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
                         {CLIENT_TYPE_LABELS[type]}
@@ -181,7 +181,7 @@ export default function DashboardPage() {
                       <Link
                         key={s}
                         to={`/filings?status=${s}`}
-                        className="block rounded-md border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-indigo-300 hover:bg-indigo-50"
+                        className="block rounded-md border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50"
                       >
                         <div className="flex items-center gap-2">
                           <span className={`inline-block h-2 w-2 rounded-full ${PIPELINE_COLORS[s]}`} />

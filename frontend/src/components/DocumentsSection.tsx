@@ -93,7 +93,7 @@ export default function DocumentsSection({ clientId, filingId, title = 'Document
             onChange={(e) => setCategory(e.target.value)}
             placeholder='Category (e.g. "Form 16", "Bank statement")'
             maxLength={60}
-            className="flex-1 min-w-[200px] rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="flex-1 min-w-[200px] rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           <input
             ref={fileInput}
@@ -103,7 +103,7 @@ export default function DocumentsSection({ clientId, filingId, title = 'Document
               const f = e.target.files?.[0]
               if (f) handleUpload(f)
             }}
-            className="block max-w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-indigo-700 disabled:opacity-50"
+            className="block max-w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700 disabled:opacity-50"
           />
           {uploading && <Spinner size="sm" />}
         </div>
@@ -137,7 +137,7 @@ export default function DocumentsSection({ clientId, filingId, title = 'Document
                   <td className="py-2">
                     <button
                       onClick={() => handleDownload(d)}
-                      className="text-left font-medium text-indigo-700 hover:underline"
+                      className="text-left font-medium text-blue-700 hover:underline"
                     >
                       {d.originalName}
                     </button>
@@ -152,7 +152,7 @@ export default function DocumentsSection({ clientId, filingId, title = 'Document
                   <td className="py-2 text-right">
                     <button
                       onClick={() => handleDownload(d)}
-                      className="text-xs text-indigo-600 hover:underline"
+                      className="text-xs text-blue-600 hover:underline"
                     >
                       Download
                     </button>

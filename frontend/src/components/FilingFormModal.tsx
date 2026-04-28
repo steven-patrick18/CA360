@@ -349,7 +349,7 @@ export default function FilingFormModal({
             type="submit"
             form="filing-form"
             disabled={submitting || loadingMeta}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? <Spinner size="sm" /> : isEdit ? 'Save changes' : 'Create filing'}
           </button>

@@ -169,7 +169,7 @@ export default function ReportsPage() {
                 {overdue.map((f) => (
                   <tr key={f.id}>
                     <td className="py-2">
-                      <Link to={`/clients/${f.client.id}`} className="text-indigo-700 hover:underline">
+                      <Link to={`/clients/${f.client.id}`} className="text-blue-700 hover:underline">
                         {f.client.name}
                       </Link>
                     </td>
@@ -197,7 +197,7 @@ export default function ReportsPage() {
           <select
             value={horizon}
             onChange={(e) => setHorizon(Number(e.target.value))}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value={7}>Next 7 days</option>
             <option value={14}>Next 14 days</option>
@@ -224,7 +224,7 @@ export default function ReportsPage() {
                 {upcoming.map((f) => (
                   <tr key={f.id} className="hover:bg-slate-50">
                     <td className="py-2">
-                      <Link to={`/clients/${f.client.id}`} className="text-indigo-700 hover:underline">
+                      <Link to={`/clients/${f.client.id}`} className="text-blue-700 hover:underline">
                         {f.client.name}
                       </Link>
                     </td>
@@ -380,7 +380,7 @@ export default function ReportsPage() {
                     <td className="py-2">
                       <span className="font-medium text-slate-900">{b.name}</span>
                       {b.isHq && (
-                        <span className="ml-2 inline-flex items-center rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium uppercase text-indigo-700 ring-1 ring-inset ring-indigo-200">
+                        <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium uppercase text-blue-700 ring-1 ring-inset ring-blue-200">
                           HQ
                         </span>
                       )}

@@ -26,7 +26,7 @@ export default function ClientNewPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-5">
       <div>
-        <Link to="/clients" className="text-sm text-indigo-600 hover:underline">
+        <Link to="/clients" className="text-sm text-blue-600 hover:underline">
           ← Back to clients
         </Link>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">New client</h1>

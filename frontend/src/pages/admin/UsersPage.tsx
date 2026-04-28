@@ -121,7 +121,7 @@ function UserModal({ open, onClose, onSaved, user, branches }: UserModalProps) {
                   onSaved()
                   onClose()
                 }}
-                className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
               >
                 Done
               </button>
@@ -197,7 +197,7 @@ function UserModal({ open, onClose, onSaved, user, branches }: UserModalProps) {
               type="submit"
               form="user-form"
               disabled={submitting}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {submitting ? <Spinner size="sm" /> : isEdit ? 'Save' : 'Create user'}
             </button>
@@ -268,7 +268,7 @@ export default function UsersPage() {
         </div>
         <button
           onClick={() => setModal({ open: true })}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           + Add user
         </button>
@@ -332,7 +332,7 @@ export default function UsersPage() {
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => setModal({ open: true, user: u })}
-                        className="text-xs text-indigo-600 hover:underline"
+                        className="text-xs text-blue-600 hover:underline"
                       >
                         Edit
                       </button>

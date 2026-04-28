@@ -32,7 +32,7 @@ export default function ImportClientsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <div>
-        <Link to="/clients" className="text-sm text-indigo-600 hover:underline">
+        <Link to="/clients" className="text-sm text-blue-600 hover:underline">
           ← Back to clients
         </Link>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">Import clients from Excel</h1>
@@ -77,7 +77,7 @@ export default function ImportClientsPage() {
             setFile(e.target.files?.[0] ?? null)
             setResult(null)
           }}
-          className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-indigo-700"
+          className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
         />
         {file && (
           <div className="mt-3 flex items-center justify-between gap-3 text-sm">
@@ -87,7 +87,7 @@ export default function ImportClientsPage() {
             <button
               onClick={handleUpload}
               disabled={submitting}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {submitting ? <Spinner size="sm" /> : 'Upload and import'}
             </button>
@@ -155,7 +155,7 @@ export default function ImportClientsPage() {
             <div className="mt-4 flex justify-end">
               <Link
                 to="/clients"
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
               >
                 View clients →
               </Link>

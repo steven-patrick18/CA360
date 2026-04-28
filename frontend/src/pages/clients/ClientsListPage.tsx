@@ -124,7 +124,7 @@ export default function ClientsListPage() {
           </Link>
           <Link
             to="/clients/new"
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             + Add client
           </Link>
@@ -139,7 +139,7 @@ export default function ClientsListPage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search by name, PAN, email, or mobile…"
-              className="w-full max-w-md rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full max-w-md rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             <button
               type="submit"
@@ -151,7 +151,7 @@ export default function ClientsListPage() {
           <select
             value={status}
             onChange={(e) => updateParams({ status: e.target.value })}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All statuses</option>
             {Object.entries(STATUS_LABELS).map(([v, l]) => (
@@ -163,7 +163,7 @@ export default function ClientsListPage() {
           <select
             value={type}
             onChange={(e) => updateParams({ type: e.target.value })}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All types</option>
             {Object.entries(CLIENT_TYPE_LABELS).map(([v, l]) => (
@@ -178,7 +178,7 @@ export default function ClientsListPage() {
                 setSearchInput('')
                 setParams(new URLSearchParams())
               }}
-              className="text-sm text-indigo-600 hover:underline"
+              className="text-sm text-blue-600 hover:underline"
             >
               Clear filters
             </button>
@@ -220,7 +220,7 @@ export default function ClientsListPage() {
                     <td className="px-4 py-3">
                       <Link
                         to={`/clients/${c.id}`}
-                        className="font-medium text-indigo-700 hover:underline"
+                        className="font-medium text-blue-700 hover:underline"
                       >
                         {c.name}
                       </Link>
