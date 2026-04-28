@@ -94,6 +94,7 @@ model CaFirm {
   clients     Client[]
   credentials ClientCredential[]
   filings     ItrFiling[]
+  documents   Document[]
   auditLogs   AuditLog[]
 
   @@map("ca_firm")
@@ -143,6 +144,7 @@ model User {
   credentialReveals     ClientCredential[] @relation("CredentialRevealer")
   filingsPrepared       ItrFiling[]        @relation("FilingPreparer")
   filingsFiled          ItrFiling[]        @relation("FilingFiler")
+  documentsUploaded     Document[]         @relation("DocumentUploader")
   auditLogs             AuditLog[]         @relation("UserAuditLog")
 
   @@index([firmId])
@@ -176,6 +178,7 @@ model Client {
   assignedTo  User?              @relation("ClientAssignment", fields: [assignedUserId], references: [id], onDelete: SetNull)
   credentials ClientCredential[]
   filings     ItrFiling[]
+  documents   Document[]
 
   @@unique([firmId, srNo])
   @@unique([firmId, pan])
@@ -230,10 +233,11 @@ model ItrFiling {
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
 
-  firm       CaFirm @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  client     Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  preparedBy User?  @relation("FilingPreparer", fields: [preparedById], references: [id], onDelete: SetNull)
-  filedBy    User?  @relation("FilingFiler", fields: [filedById], references: [id], onDelete: SetNull)
+  firm       CaFirm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client     Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  preparedBy User?      @relation("FilingPreparer", fields: [preparedById], references: [id], onDelete: SetNull)
+  filedBy    User?      @relation("FilingFiler", fields: [filedById], references: [id], onDelete: SetNull)
+  documents  Document[]
 
   @@unique([clientId, assessmentYear])
   @@index([firmId])
@@ -242,6 +246,30 @@ model ItrFiling {
   @@index([firmId, assessmentYear])
   @@index([firmId, dueDate])
   @@map("itr_filings")
+}
+
+model Document {
+  id           String   @id @default(uuid()) @db.Uuid
+  firmId       String   @map("firm_id") @db.Uuid
+  clientId     String   @map("client_id") @db.Uuid
+  filingId     String?  @map("filing_id") @db.Uuid
+  category     String?  @db.VarChar(60) // free-text label e.g. "Form 16", "Bank statement"
+  storagePath  String   @map("storage_path") // opaque path/key handed to StorageService
+  originalName String   @map("original_name")
+  size         Int
+  mime         String
+  uploadedById String   @map("uploaded_by") @db.Uuid
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  firm       CaFirm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client     Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  filing     ItrFiling? @relation(fields: [filingId], references: [id], onDelete: SetNull)
+  uploadedBy User       @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([firmId])
+  @@index([clientId])
+  @@index([filingId])
+  @@map("documents")
 }
 
 model AuditLog {

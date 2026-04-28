@@ -25,6 +25,12 @@ const NAV_ITEMS: NavItem[] = [
     enabled: true,
   },
   {
+    label: 'Access',
+    to: '/access',
+    roles: ['MANAGING_PARTNER', 'PARTNER'],
+    enabled: true,
+  },
+  {
     label: 'Reports',
     to: '/reports',
     roles: ['MANAGING_PARTNER', 'PARTNER', 'BRANCH_HEAD'],

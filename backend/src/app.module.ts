@@ -16,6 +16,8 @@ import { UsersModule } from './users/users.module';
 import { BranchesModule } from './branches/branches.module';
 import { ImportModule } from './import/import.module';
 import { ExportModule } from './export/export.module';
+import { StorageModule } from './storage/storage.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { ExportModule } from './export/export.module';
     BranchesModule,
     ImportModule,
     ExportModule,
+    StorageModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

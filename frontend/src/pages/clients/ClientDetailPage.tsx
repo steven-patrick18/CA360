@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ClientForm from '../../components/ClientForm'
+import DocumentsSection from '../../components/DocumentsSection'
 import FilingFormModal from '../../components/FilingFormModal'
 import Spinner from '../../components/Spinner'
 import { clientsApi, credentialsApi } from '../../lib/clients-api'
@@ -493,6 +494,9 @@ export default function ClientDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Documents */}
+      <DocumentsSection clientId={client.id} />
 
       <FilingFormModal
         open={filingModal.open}
