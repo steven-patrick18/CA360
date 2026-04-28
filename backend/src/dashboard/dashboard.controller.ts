@@ -78,6 +78,13 @@ export class DashboardController {
       _count: { _all: true },
     });
 
+    // Client type breakdown — shown as clickable cards on the dashboard
+    const clientTypeRows = await this.prisma.client.groupBy({
+      by: ['typeOfAssessee'],
+      where: cs,
+      _count: { _all: true },
+    });
+
     return {
       activeClients,
       totalClients,
@@ -86,6 +93,13 @@ export class DashboardController {
       pipeline: pipeline.reduce(
         (acc, row) => {
           acc[row.status] = row._count._all;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+      clientTypeBreakdown: clientTypeRows.reduce(
+        (acc, row) => {
+          acc[row.typeOfAssessee] = row._count._all;
           return acc;
         },
         {} as Record<string, number>,

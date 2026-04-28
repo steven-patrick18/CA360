@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ROLE_LABELS, useAuth } from '../lib/auth'
 import { dashboardApi } from '../lib/filings-api'
-import { FILING_STATUS_LABELS, type DashboardStats, type FilingStatus } from '../lib/api-types'
+import {
+  CLIENT_TYPE_LABELS,
+  FILING_STATUS_LABELS,
+  type ClientType,
+  type DashboardStats,
+  type FilingStatus,
+} from '../lib/api-types'
 import Spinner from '../components/Spinner'
 import { useToast, getApiErrorMessage } from '../lib/toast'
 
@@ -102,6 +108,45 @@ export default function DashboardPage() {
               hint="Based on filed date"
             />
             <StatCard label="Documents" value="—" hint="Coming in next batch" />
+          </div>
+
+          {/* Clients by type — clickable cards drill into a filtered list */}
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-medium text-slate-900">Clients by type</h2>
+            <p className="mt-1 mb-3 text-xs text-slate-500">
+              Click any card to open the matching client list.
+            </p>
+            {(() => {
+              const breakdown = stats.clientTypeBreakdown ?? {}
+              const types = (Object.keys(CLIENT_TYPE_LABELS) as ClientType[])
+                .map((t) => ({ type: t, count: breakdown[t] ?? 0 }))
+                .filter((row) => row.count > 0)
+                .sort((a, b) => b.count - a.count)
+
+              if (types.length === 0) {
+                return (
+                  <div className="rounded-md border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+                    No clients yet. Add some to see the type breakdown here.
+                  </div>
+                )
+              }
+              return (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {types.map(({ type, count }) => (
+                    <Link
+                      key={type}
+                      to={`/clients?type=${type}`}
+                      className="block rounded-md border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-indigo-300 hover:bg-indigo-50"
+                    >
+                      <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        {CLIENT_TYPE_LABELS[type]}
+                      </div>
+                      <div className="mt-1 text-2xl font-semibold text-slate-900">{count}</div>
+                    </Link>
+                  ))}
+                </div>
+              )
+            })()}
           </div>
 
           {pipelineTotal > 0 && (

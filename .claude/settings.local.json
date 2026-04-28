@@ -28,7 +28,8 @@
       "Bash(node smoke-test.js)",
       "Bash(node smoke-test-3.js)",
       "Bash(mkdir -p /tmp)",
-      "Bash(node smoke-test-4.js)"
+      "Bash(node smoke-test-4.js)",
+      "Bash(node -e ' *)"
     ]
   }
 }

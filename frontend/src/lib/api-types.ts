@@ -79,6 +79,7 @@ export interface DashboardStats {
   pendingFilings: number
   filedThisMonth: number
   pipeline: Partial<Record<FilingStatus, number>>
+  clientTypeBreakdown: Partial<Record<ClientType, number>>
 }
 
 export interface Branch {
