@@ -56,7 +56,10 @@
       "Read(//c/Program Files/**)",
       "Bash(pdftotext -layout \"C:/Users/ASUS/Downloads/COI_AY_24-25.pdf\" -)",
       "Bash(git -C \"D:/CA360\" log --oneline origin/main..HEAD)",
-      "Bash(git -C \"D:/CA360\" push origin main)"
+      "Bash(git -C \"D:/CA360\" push origin main)",
+      "Bash(tasklist)",
+      "Bash(taskkill //F //PID 110512)",
+      "Bash(git update-index *)"
     ]
   }
 }

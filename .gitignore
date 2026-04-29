@@ -30,8 +30,11 @@ postgres-data/
 .postgres-data/
 
 # ─── Uploaded files (Phase 1 stores on local FS) ──────────────
-storage/
-uploads/
+# Anchor to root so we don't accidentally ignore backend/src/storage/.
+/storage/
+/uploads/
+/backend/storage/
+/backend/uploads/
 
 # ─── Logs ─────────────────────────────────────────────────────
 logs/
