@@ -204,31 +204,6 @@ export default function DashboardPage() {
         </>
       ) : null}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-base font-medium text-slate-900">Phase 1 — Build progress</h2>
-        <ul className="mt-3 space-y-2 text-sm text-slate-700">
-          <li className="flex items-center gap-2">
-            <span className="text-emerald-600">✓</span> Auth, 2FA, dashboard shell, RBAC, RLS
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="text-emerald-600">✓</span> Client master, encrypted credential vault,
-            audit log
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="text-emerald-600">✓</span> ITR filings, status pipeline, multi-year
-            tracking
-          </li>
-          <li className="flex items-center gap-2 text-slate-400">
-            <span>○</span> Excel import + reports + export
-          </li>
-          <li className="flex items-center gap-2 text-slate-400">
-            <span>○</span> User / branch management UI
-          </li>
-          <li className="flex items-center gap-2 text-slate-400">
-            <span>○</span> Deployment to Ubuntu VPS
-          </li>
-        </ul>
-      </div>
     </div>
   )
 }
